@@ -1,0 +1,26 @@
+project:
+  name: PistonConfig
+  versionPattern: semver
+  description: General purpose, format-agnostic Java configuration library.
+  longDescription: PistonConfig provides a lossless core configuration model, comment-aware backends, typed codecs, annotation configs, static field declarations, environment overrides, and migrations.
+  authors:
+    - AlexProgrammerDE
+  license: Apache-2.0
+  links:
+    homepage: https://config.pistonmaster.net
+  java:
+    version: 25
+  inceptionYear: 2026
+
+signing:
+  active: ALWAYS
+  armored: true
+
+deploy:
+  maven:
+    mavenCentral:
+      pistonConfig:
+        active: RELEASE
+        url: https://central.sonatype.com/api/v1/publisher
+        stagingRepositories:
+          - build/staging-deploy

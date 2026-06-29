@@ -1,0 +1,10 @@
+title: PistonConfig
+description: Format-agnostic Java configuration library.
+url: "https://config.pistonmaster.net"
+baseurl: ""
+markdown: kramdown
+plugins:
+  - jekyll-seo-tag
+exclude:
+  - Gemfile
+  - Gemfile.lock

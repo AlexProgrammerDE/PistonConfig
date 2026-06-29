@@ -1,0 +1,19 @@
+name: Feature Request
+description: Suggest a focused improvement.
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: What are you trying to build?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should PistonConfig add or change?
+    validations:
+      required: true

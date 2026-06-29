@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ page.title | default: site.title }}</title>
+    <meta name="description" content="{{ page.description | default: site.description }}">
+    <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+    {% seo %}
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="{{ '/' | relative_url }}">PistonConfig</a>
+      <nav aria-label="Main navigation">
+        <a href="{{ '/guides/getting-started.html' | relative_url }}">Guide</a>
+        <a href="{{ '/reference/modules.html' | relative_url }}">Modules</a>
+        <a href="https://github.com/AlexProgrammerDE/PistonConfig">GitHub</a>
+      </nav>
+    </header>
+    <main class="page">
+      {{ content }}
+    </main>
+  </body>
+</html>
