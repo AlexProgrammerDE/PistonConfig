@@ -15,6 +15,7 @@ dependencyResolutionManagement {
 rootProject.name = "PistonConfig"
 
 include(
+  "pistonconfig-bom",
   "pistonconfig-core",
   "pistonconfig-properties",
   "pistonconfig-json",

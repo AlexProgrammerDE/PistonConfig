@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 56 56" role="img" aria-label="PistonConfig mark">
+  <rect width="56" height="56" rx="10" fill="#1f2328"/>
+  <path d="M14 16h20c5 0 9 4 9 9s-4 9-9 9H24v8H14V16z" fill="#f4f2ec"/>
+  <path d="M24 24h9c1 0 2 1 2 2s-1 2-2 2h-9v-4z" fill="#0f766e"/>
+  <path d="M12 44h32" stroke="#b45309" stroke-width="4" stroke-linecap="round"/>
+</svg>

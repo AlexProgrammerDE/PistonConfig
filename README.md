@@ -23,8 +23,24 @@ The Maven group is `net.pistonmaster`. Module artifacts use the format `pistonco
 
 ```kotlin
 dependencies {
-  implementation("net.pistonmaster:pistonconfig-core:0.1.0-SNAPSHOT")
-  implementation("net.pistonmaster:pistonconfig-yaml:0.1.0-SNAPSHOT")
+  implementation(platform("net.pistonmaster:pistonconfig-bom:0.1.0-SNAPSHOT"))
+  implementation("net.pistonmaster:pistonconfig-core")
+  implementation("net.pistonmaster:pistonconfig-yaml")
+}
+```
+
+GitHub Packages is also configured as a release target. Consumers need an authenticated Maven repository:
+
+```kotlin
+repositories {
+  maven {
+    name = "GitHubPackages"
+    url = uri("https://maven.pkg.github.com/AlexProgrammerDE/PistonConfig")
+    credentials {
+      username = providers.gradleProperty("githubPackagesUsername").orNull
+      password = providers.gradleProperty("githubPackagesToken").orNull
+    }
+  }
 }
 ```
 

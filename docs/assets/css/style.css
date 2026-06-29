@@ -1,12 +1,16 @@
 :root {
   color-scheme: light;
-  --background: #fcfcfc;
+  --background: #fbfbf8;
   --surface: #ffffff;
+  --surface-muted: #f4f2ec;
   --text: #1f2328;
-  --muted: #59636e;
-  --border: #d8dee4;
+  --muted: #59605d;
+  --border: #ddd9cc;
   --accent: #0f766e;
+  --accent-strong: #0b5f58;
+  --accent-warm: #b45309;
   --code: #f6f8fa;
+  --code-border: #d8dee4;
 }
 
 * {
@@ -17,7 +21,7 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--text);
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.6;
 }
 
@@ -31,31 +35,83 @@ a:hover {
 }
 
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 24px;
-  padding: 18px 28px;
+  min-height: 64px;
+  padding: 14px 28px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   color: var(--text);
   font-weight: 700;
 }
 
-nav {
+.brand img {
+  flex: none;
+}
+
+.top-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 18px;
   font-size: 14px;
 }
 
-.page {
-  width: min(960px, calc(100% - 40px));
+.shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  width: min(1320px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 48px 0 72px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 65px;
+  align-self: start;
+  height: calc(100vh - 65px);
+  overflow: auto;
+  padding: 32px 28px 48px 0;
+  border-right: 1px solid var(--border);
+}
+
+.nav-section {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 26px;
+}
+
+.nav-section p {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nav-section a {
+  display: block;
+  padding: 5px 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.nav-section a:hover {
+  color: var(--accent-strong);
+}
+
+.page {
+  min-width: 0;
+  max-width: 880px;
+  padding: 48px 0 80px 48px;
 }
 
 h1,
@@ -70,9 +126,13 @@ h1 {
 }
 
 h2 {
-  margin-top: 42px;
-  padding-top: 18px;
+  margin-top: 44px;
+  padding-top: 20px;
   border-top: 1px solid var(--border);
+}
+
+h3 {
+  margin-top: 28px;
 }
 
 p,
@@ -85,7 +145,9 @@ strong {
 }
 
 table {
+  display: block;
   width: 100%;
+  overflow-x: auto;
   border-collapse: collapse;
   margin: 24px 0;
 }
@@ -99,7 +161,7 @@ td {
 }
 
 th {
-  background: var(--code);
+  background: var(--surface-muted);
   color: var(--text);
 }
 
@@ -114,7 +176,7 @@ code {
 pre {
   overflow: auto;
   padding: 16px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--code-border);
   border-radius: 8px;
   background: var(--code);
 }
@@ -126,7 +188,7 @@ pre code {
 
 .highlight {
   margin: 18px 0;
-  border: 1px solid var(--border);
+  border: 1px solid var(--code-border);
   border-radius: 8px;
   background: var(--code);
 }
@@ -219,10 +281,98 @@ pre code {
   background: #dafbe1;
 }
 
+.lead {
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1.55;
+}
+
+.home-grid,
+.link-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 24px 0;
+}
+
+.home-panel,
+.link-card,
+.callout {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.home-panel,
+.link-card {
+  padding: 18px;
+}
+
+.home-panel h2,
+.link-card h3 {
+  margin: 0 0 8px;
+  padding: 0;
+  border: 0;
+  font-size: 18px;
+}
+
+.home-panel p,
+.link-card p {
+  margin: 0;
+}
+
+.callout {
+  margin: 24px 0;
+  padding: 14px 16px;
+  border-left: 4px solid var(--accent);
+}
+
+.callout p {
+  margin: 0;
+}
+
+.metadata-list {
+  display: grid;
+  gap: 10px;
+}
+
+.metadata-list div {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.metadata-list strong {
+  display: block;
+}
+
 @media (max-width: 680px) {
   .site-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .shell {
+    display: block;
+    width: min(100% - 32px, 880px);
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    padding: 20px 0 8px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page {
+    padding: 32px 0 64px;
+  }
+
+  .home-grid,
+  .link-grid {
+    grid-template-columns: 1fr;
   }
 
   h1 {

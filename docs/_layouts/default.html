@@ -10,15 +10,44 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="{{ '/' | relative_url }}">PistonConfig</a>
-      <nav aria-label="Main navigation">
-        <a href="{{ '/guides/getting-started.html' | relative_url }}">Guide</a>
-        <a href="{{ '/reference/modules.html' | relative_url }}">Modules</a>
+      <a class="brand" href="{{ '/' | relative_url }}">
+        <img src="{{ '/assets/img/mark.svg' | relative_url }}" alt="" width="28" height="28">
+        <span>PistonConfig</span>
+      </a>
+      <nav class="top-nav" aria-label="Main navigation">
+        <a href="{{ '/guides/getting-started.html' | relative_url }}">Start</a>
+        <a href="{{ '/guides/installation.html' | relative_url }}">Install</a>
+        <a href="{{ '/reference/modules.html' | relative_url }}">Reference</a>
         <a href="https://github.com/AlexProgrammerDE/PistonConfig">GitHub</a>
       </nav>
     </header>
-    <main class="page">
-      {{ content }}
-    </main>
+    <div class="shell">
+      <aside class="sidebar" aria-label="Documentation navigation">
+        <div class="nav-section">
+          <p>Guides</p>
+          <a href="{{ '/guides/getting-started.html' | relative_url }}">Getting Started</a>
+          <a href="{{ '/guides/installation.html' | relative_url }}">Installation</a>
+          <a href="{{ '/guides/manual-api.html' | relative_url }}">Manual API</a>
+          <a href="{{ '/guides/annotation-configs.html' | relative_url }}">Annotation Configs</a>
+          <a href="{{ '/guides/static-field-configs.html' | relative_url }}">Static Fields</a>
+          <a href="{{ '/guides/environment-overrides.html' | relative_url }}">Environment Overrides</a>
+          <a href="{{ '/guides/migrations.html' | relative_url }}">Migrations</a>
+        </div>
+        <div class="nav-section">
+          <p>Reference</p>
+          <a href="{{ '/reference/modules.html' | relative_url }}">Modules</a>
+          <a href="{{ '/reference/document-model.html' | relative_url }}">Document Model</a>
+          <a href="{{ '/reference/format-metadata.html' | relative_url }}">Format Metadata</a>
+          <a href="{{ '/reference/publishing.html' | relative_url }}">Publishing</a>
+        </div>
+        <div class="nav-section">
+          <p>Concepts</p>
+          <a href="{{ '/concepts/lossless-configuration.html' | relative_url }}">Lossless Configuration</a>
+        </div>
+      </aside>
+      <main class="page">
+        {{ content }}
+      </main>
+    </div>
   </body>
 </html>
