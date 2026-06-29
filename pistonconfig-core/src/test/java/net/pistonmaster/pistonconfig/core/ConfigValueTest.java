@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 final class ConfigValueTest {
@@ -30,12 +29,14 @@ final class ConfigValueTest {
   @Test
   void immutableValueContainersRejectMutation() {
     var children = new LinkedHashMap<String, ConfigValue>();
-    children.put("enabled", new ScalarValue<>(true));
+    children.put("enabled", ScalarValue.<Boolean>builder().value(true).build());
 
-    var object = new ObjectValue(children);
-    var list = new ListValue(List.of(new ScalarValue<>("value")));
+    var object = ObjectValue.builder().putAllChildren(children).build();
+    var list = ListValue.builder()
+      .addChildren(ScalarValue.<String>builder().value("value").build())
+      .build();
 
-    children.put("added-later", new ScalarValue<>("ignored"));
+    children.put("added-later", ScalarValue.<String>builder().value("ignored").build());
 
     assertEquals(1, object.children().size());
     assertThrows(UnsupportedOperationException.class, () -> object.children().put("other", NullValue.INSTANCE));
@@ -45,7 +46,7 @@ final class ConfigValueTest {
   @Test
   void convertsSealedValueVariantsToNodes() {
     assertEquals(ConfigValueKind.NULL, ConfigValue.toNode(NullValue.INSTANCE).kind());
-    assertEquals("value", ConfigValue.toNode(new ScalarValue<>("value")).asString().orElseThrow());
-    assertInstanceOf(ConfigNode.class, ConfigValue.toNode(new ListValue(List.of())));
+    assertEquals("value", ConfigValue.toNode(ScalarValue.<String>builder().value("value").build()).asString().orElseThrow());
+    assertInstanceOf(ConfigNode.class, ConfigValue.toNode(ListValue.builder().build()));
   }
 }

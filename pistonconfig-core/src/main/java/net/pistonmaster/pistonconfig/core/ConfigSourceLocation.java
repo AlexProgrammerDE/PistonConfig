@@ -30,18 +30,11 @@ public interface ConfigSourceLocation {
     return -1;
   }
 
-  /// Creates a source location.
+  /// Creates an Immutables builder for source locations.
   ///
-  /// @param description parser-specific source description
-  /// @param line zero-based source line, or `-1` when unknown
-  /// @param column zero-based source column, or `-1` when unknown
-  /// @return source location
-  static ConfigSourceLocation of(String description, int line, int column) {
-    return ImmutableConfigSourceLocation.builder()
-      .description(description == null ? "" : description)
-      .line(line)
-      .column(column)
-      .build();
+  /// @return source location builder
+  static ImmutableConfigSourceLocation.Builder builder() {
+    return ImmutableConfigSourceLocation.builder();
   }
 
   /// Creates an unknown source location.

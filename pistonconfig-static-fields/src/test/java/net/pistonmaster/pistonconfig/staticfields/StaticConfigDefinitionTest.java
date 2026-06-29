@@ -8,6 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import net.pistonmaster.pistonconfig.core.ConfigCodec;
 import net.pistonmaster.pistonconfig.core.ConfigCodecRegistry;
+import net.pistonmaster.pistonconfig.core.ConfigComment;
+import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
+import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
+import net.pistonmaster.pistonconfig.core.ConfigCommentType;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
@@ -86,30 +90,67 @@ final class StaticConfigDefinitionTest {
 
   @Test
   void rejectsNullInputs() {
-    assertThrows(NullPointerException.class, () -> StaticConfigDefinition.of(null));
+    assertThrows(NullPointerException.class, () -> StaticConfigDefinition.builder().addProperty(null));
     assertThrows(NullPointerException.class, () -> StaticConfigDefinition.from(null));
-    assertThrows(NullPointerException.class, () -> ConfigProperty.of("path", null, "value"));
-    assertThrows(NullPointerException.class, () -> new ConfigProperty<>(null, String.class, "value", null));
-    assertTrue(ConfigProperty.of("path", String.class, "value").comment().isEmpty());
+    assertThrows(NullPointerException.class, () -> ConfigProperty.<String>builder()
+      .path(ConfigPath.parse("path"))
+      .type(null)
+      .defaultValue("value")
+      .build());
+    assertThrows(NullPointerException.class, () -> ConfigProperty.<String>builder()
+      .path(null)
+      .type(String.class)
+      .defaultValue("value")
+      .build());
+    assertTrue(ConfigProperty.<String>builder()
+      .path(ConfigPath.parse("path"))
+      .type(String.class)
+      .defaultValue("value")
+      .build()
+      .comment()
+      .isEmpty());
   }
 
   private static final class Options {
     static final String IGNORED = "ignored";
-    static final ConfigProperty<Integer> PORT = ConfigProperty
-      .of("server.port", Integer.class, 25565)
-      .withComment("Server port.");
-    private static final ConfigProperty<String> HOST = ConfigProperty
-      .of("server.host", String.class, "localhost")
-      .withComment("Server host.");
+    static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
+      .path(ConfigPath.parse("server.port"))
+      .type(Integer.class)
+      .defaultValue(25565)
+      .comment(comment("Server port."))
+      .build();
+    private static final ConfigProperty<String> HOST = ConfigProperty.<String>builder()
+      .path(ConfigPath.parse("server.host"))
+      .type(String.class)
+      .defaultValue("localhost")
+      .comment(comment("Server host."))
+      .build();
 
-    ConfigProperty<String> instanceProperty = ConfigProperty.of("ignored", String.class, "ignored");
+    ConfigProperty<String> instanceProperty = ConfigProperty.<String>builder()
+      .path(ConfigPath.parse("ignored"))
+      .type(String.class)
+      .defaultValue("ignored")
+      .build();
   }
 
   private static final class EndpointOptions {
-    static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty
-      .of("endpoint", Endpoint.class, new Endpoint("localhost", 25565));
+    static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty.<Endpoint>builder()
+      .path(ConfigPath.parse("endpoint"))
+      .type(Endpoint.class)
+      .defaultValue(new Endpoint("localhost", 25565))
+      .build();
   }
 
   private record Endpoint(String host, int port) {
+  }
+
+  private static ConfigComment comment(String text) {
+    return ConfigComment.builder()
+      .addLeading(ConfigCommentLine.builder()
+        .text(text)
+        .type(ConfigCommentType.BLOCK)
+        .marker(ConfigCommentMarker.HASH)
+        .build())
+      .build();
   }
 }

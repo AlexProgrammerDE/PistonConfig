@@ -6,6 +6,7 @@ import org.immutables.value.Value;
 @Value.Style(
   stagedBuilder = true,
   strictBuilder = true,
+  depluralize = true,
   typeImmutable = "Immutable*",
   jdkOnly = true
 )

@@ -50,14 +50,22 @@ Each format module depends on core and exposes a singleton `ConfigFormat` named 
 
 These modules operate on the same `ConfigDocument` model, so they can be mixed in one startup flow.
 
-## Generated Types
+## Generated Builders
 
-The core module uses Immutables for selected value objects:
+PistonConfig uses Immutables for value objects and option types:
 
 | Interface | Generated implementation |
 | --- | --- |
+| `ConfigComment` | `ImmutableConfigComment` |
 | `ConfigCommentLine` | `ImmutableConfigCommentLine` |
+| `ConfigFormatCapabilities` | `ImmutableConfigFormatCapabilities` |
+| `MergeOptions` | `ImmutableMergeOptions` |
 | `ConfigNodeDecorations` | `ImmutableConfigNodeDecorations` |
 | `ConfigSourceLocation` | `ImmutableConfigSourceLocation` |
+| `ObjectValue`, `ListValue`, `ScalarValue` | `ImmutableObjectValue`, `ImmutableListValue`, `ImmutableScalarValue` |
+| `ConfigProperty` | `ImmutableConfigProperty` |
+| `StaticConfigDefinition` | `ImmutableStaticConfigDefinition` |
+| `EnvironmentOverrides` | `ImmutableEnvironmentOverrides` |
+| `ConfigMigration`, `MigrationRegistry` | `ImmutableConfigMigration`, `ImmutableMigrationRegistry` |
 
-Most callers use the factory and `with...` methods exposed by the public interfaces instead of referencing generated implementation types directly.
+Use the public `builder()` entry points for new values. Use generated `Immutable*` copy methods when updating an existing immutable value.

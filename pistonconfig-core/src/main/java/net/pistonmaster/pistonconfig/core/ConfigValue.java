@@ -18,10 +18,14 @@ public sealed interface ConfigValue permits ObjectValue, ListValue, ScalarValue,
       case OBJECT -> {
         var children = new LinkedHashMap<String, ConfigValue>();
         node.objectChildren().forEach((key, child) -> children.put(key, fromNode(child)));
-        yield new ObjectValue(children);
+        yield ObjectValue.builder().putAllChildren(children).build();
       }
-      case LIST -> new ListValue(node.listChildren().stream().map(ConfigValue::fromNode).toList());
-      case SCALAR -> new ScalarValue<>(node.rawValue());
+      case LIST -> ListValue.builder()
+        .addAllChildren(node.listChildren().stream().map(ConfigValue::fromNode).toList())
+        .build();
+      case SCALAR -> ScalarValue.builder()
+        .value(node.rawValue())
+        .build();
       case NULL -> NullValue.INSTANCE;
     };
   }

@@ -8,12 +8,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.Map;
 import net.pistonmaster.pistonconfig.core.ConfigComment;
+import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
 import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
+import net.pistonmaster.pistonconfig.core.ConfigCommentType;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
+import net.pistonmaster.pistonconfig.core.ImmutableConfigNodeDecorations;
 import org.junit.jupiter.api.Test;
 
 final class PropertiesConfigLoaderTest {
@@ -73,15 +77,17 @@ final class PropertiesConfigLoaderTest {
   @Test
   void savesRootCommentsListsPropertyCommentsAndSeparators() {
     var document = ConfigDocument.empty();
-    document.root().setComment(ConfigComment.ofPlain(
-      java.util.List.of("File header."),
-      "",
-      java.util.List.of("File footer.")
-    ));
+    document.root().setComment(ConfigComment.builder()
+      .addLeading(commentLine("File header.", ConfigCommentMarker.HASH))
+      .addTrailing(commentLine("File footer.", ConfigCommentMarker.HASH))
+      .build());
     document
       .setNode(ConfigPath.parse("server.port"), ConfigNode.scalar(25565)
-        .setComment(ConfigComment.lines("Port comment."))
-        .decorate(decorations -> decorations.withAttribute(PropertiesMetadataKeys.SEPARATOR, " : ")))
+        .setComment(ConfigComment.builder()
+          .addLeading(commentLine("Port comment.", ConfigCommentMarker.HASH))
+          .build())
+        .decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+          .withAttributes(Map.of(PropertiesMetadataKeys.SEPARATOR, " : "))))
       .setNode(ConfigPath.of("modules"), ConfigNode.list()
         .addListValue("core")
         .addListValue("yaml"));
@@ -102,6 +108,14 @@ final class PropertiesConfigLoaderTest {
   @Test
   void wrapsInvalidPropertiesAsConfigException() {
     assertThrows(ConfigException.class, () -> new PropertiesConfigLoader().load(new ThrowingReader()));
+  }
+
+  private static ConfigCommentLine commentLine(String text, ConfigCommentMarker marker) {
+    return ConfigCommentLine.builder()
+      .text(text)
+      .type(ConfigCommentType.BLOCK)
+      .marker(marker)
+      .build();
   }
 
   private static final class ThrowingReader extends java.io.Reader {

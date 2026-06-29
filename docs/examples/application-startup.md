@@ -47,15 +47,23 @@ final class ConfigBootstrap {
       .set("features.metrics", true);
 
     document.root().getOrCreate(ConfigPath.parse("server.port"))
-      .setComment(ConfigComment.lines("Port used by the public listener."));
+      .setComment(ConfigComment.builder()
+        .addLeading(ConfigCommentLine.builder()
+          .text("Port used by the public listener.")
+          .type(ConfigCommentType.BLOCK)
+          .marker(ConfigCommentMarker.HASH)
+          .build())
+        .build());
     return document;
   }
 
   private static MigrationRegistry migrations() {
     return MigrationRegistry.builder()
-      .versionPath("config.version")
-      .add(Migrations.migration(1, config ->
-        Migrations.rename(config, "server.bind", "server.host")))
+      .versionPath(ConfigPath.parse("config.version"))
+      .addMigration(ConfigMigration.builder()
+        .version(1)
+        .action(config -> Migrations.rename(config, "server.bind", "server.host"))
+        .build())
       .build();
   }
 

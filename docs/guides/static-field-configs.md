@@ -22,13 +22,29 @@ dependencies {
 
 ```java
 final class ServerOptions {
-  static final ConfigProperty<String> HOST = ConfigProperty
-    .of("server.host", String.class, "0.0.0.0")
-    .withComment("Address used by the public listener.");
+  static final ConfigProperty<String> HOST = ConfigProperty.<String>builder()
+    .path(ConfigPath.parse("server.host"))
+    .type(String.class)
+    .defaultValue("0.0.0.0")
+    .comment(comment("Address used by the public listener."))
+    .build();
 
-  static final ConfigProperty<Integer> PORT = ConfigProperty
-    .of("server.port", Integer.class, 25565)
-    .withComment("Port used by the public listener.");
+  static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
+    .path(ConfigPath.parse("server.port"))
+    .type(Integer.class)
+    .defaultValue(25565)
+    .comment(comment("Port used by the public listener."))
+    .build();
+
+  private static ConfigComment comment(String text) {
+    return ConfigComment.builder()
+      .addLeading(ConfigCommentLine.builder()
+        .text(text)
+        .type(ConfigCommentType.BLOCK)
+        .marker(ConfigCommentMarker.HASH)
+        .build())
+      .build();
+  }
 }
 ```
 
@@ -66,8 +82,11 @@ If the document is missing the path, `get` returns the property's default value.
 ## Use Custom Property Types
 
 ```java
-static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty
-  .of("endpoint", Endpoint.class, new Endpoint("localhost", 25565));
+static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty.<Endpoint>builder()
+  .path(ConfigPath.parse("endpoint"))
+  .type(Endpoint.class)
+  .defaultValue(new Endpoint("localhost", 25565))
+  .build();
 ```
 
 Register a matching codec before generating defaults or reading values.

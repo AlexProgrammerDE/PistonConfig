@@ -10,14 +10,17 @@ import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import net.pistonmaster.pistonconfig.core.ConfigComment;
+import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
+import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
+import net.pistonmaster.pistonconfig.core.ConfigCommentType;
 import net.pistonmaster.pistonconfig.core.ConfigScalarStyle;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigLoader;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
+import net.pistonmaster.pistonconfig.core.ImmutableConfigNodeDecorations;
 
 /// JSON, JSONC, and JSON5 reader and writer backed by json5-java.
 public final class JsonConfigLoader implements ConfigLoader {
@@ -85,18 +88,28 @@ public final class JsonConfigLoader implements ConfigLoader {
         node = ConfigNode.scalar(primitive.getAsBoolean());
       } else if (primitive.isNumber()) {
         node = ConfigNode.scalar(primitive.getAsNumber());
-        node.decorate(decorations -> decorations.withScalarStyle(numberStyle(primitive.getNumberRadix())));
+        node.decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+          .withScalarStyle(numberStyle(primitive.getNumberRadix())));
         node.setMetadata(JsonMetadataKeys.NUMBER_RADIX, primitive.getNumberRadix());
       } else if (primitive.isInstant()) {
         node = ConfigNode.scalar(primitive.getAsInstant());
-        node.decorate(decorations -> decorations.withScalarStyle(ConfigScalarStyle.TIMESTAMP));
+        node.decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+          .withScalarStyle(ConfigScalarStyle.TIMESTAMP));
       } else {
         node = ConfigNode.scalar(primitive.getAsString());
       }
     }
 
     if (element != null && element.hasComment()) {
-      node.setComment(new ConfigComment(element.getComment().lines().toList(), ""));
+      node.setComment(ConfigComment.builder()
+        .addAllLeading(element.getComment().lines()
+          .map(line -> ConfigCommentLine.builder()
+            .text(line)
+            .type(line.isEmpty() ? ConfigCommentType.BLANK : ConfigCommentType.BLOCK)
+            .marker(line.isEmpty() ? ConfigCommentMarker.NONE : ConfigCommentMarker.DOUBLE_SLASH)
+            .build())
+          .toList())
+        .build());
     }
     return node;
   }

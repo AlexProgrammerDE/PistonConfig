@@ -56,9 +56,18 @@ var config = mapper.read(defaults, ServerConfig.class);
 
 ```java
 final class ServerOptions {
-  static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty
-    .of("server.endpoint", Endpoint.class, new Endpoint("localhost", 25565))
-    .withComment("Public listener endpoint.");
+  static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty.<Endpoint>builder()
+    .path(ConfigPath.parse("server.endpoint"))
+    .type(Endpoint.class)
+    .defaultValue(new Endpoint("localhost", 25565))
+    .comment(ConfigComment.builder()
+      .addLeading(ConfigCommentLine.builder()
+        .text("Public listener endpoint.")
+        .type(ConfigCommentType.BLOCK)
+        .marker(ConfigCommentMarker.HASH)
+        .build())
+      .build())
+    .build();
 }
 
 var definition = StaticConfigDefinition.from(ServerOptions.class);

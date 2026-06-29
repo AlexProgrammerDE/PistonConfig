@@ -43,7 +43,13 @@ final class ConfigMergerTest {
       .set("server.port", 25565);
     defaults.root()
       .getOrCreate(ConfigPath.parse("server.port"))
-      .setComment(ConfigComment.lines("Default port."));
+      .setComment(ConfigComment.builder()
+        .addLeading(ConfigCommentLine.builder()
+          .text("Default port.")
+          .type(ConfigCommentType.BLOCK)
+          .marker(ConfigCommentMarker.HASH)
+          .build())
+        .build());
 
     current.mergeDefaults(defaults, MergeOptions.conservative());
 
@@ -62,15 +68,27 @@ final class ConfigMergerTest {
 
     var preserved = ConfigDocument.empty()
       .setNode(ConfigPath.of("modules"), ConfigNode.list().addListValue("custom"));
-    preserved.mergeDefaults(defaults, new MergeOptions(false, false, MergeListStrategy.PRESERVE_EXISTING));
+    preserved.mergeDefaults(defaults, MergeOptions.builder()
+      .updateComments(false)
+      .removeUnknown(false)
+      .listStrategy(MergeListStrategy.PRESERVE_EXISTING)
+      .build());
 
     var replaced = ConfigDocument.empty()
       .setNode(ConfigPath.of("modules"), ConfigNode.list().addListValue("custom"));
-    replaced.mergeDefaults(defaults, new MergeOptions(false, false, MergeListStrategy.REPLACE));
+    replaced.mergeDefaults(defaults, MergeOptions.builder()
+      .updateComments(false)
+      .removeUnknown(false)
+      .listStrategy(MergeListStrategy.REPLACE)
+      .build());
 
     var appended = ConfigDocument.empty()
       .setNode(ConfigPath.of("modules"), ConfigNode.list().addListValue("custom"));
-    appended.mergeDefaults(defaults, new MergeOptions(false, false, MergeListStrategy.APPEND_MISSING));
+    appended.mergeDefaults(defaults, MergeOptions.builder()
+      .updateComments(false)
+      .removeUnknown(false)
+      .listStrategy(MergeListStrategy.APPEND_MISSING)
+      .build());
 
     assertIterableEquals(List.of("custom"), scalarList(preserved));
     assertIterableEquals(List.of("core", "yaml", "toml"), scalarList(replaced));
@@ -78,8 +96,11 @@ final class ConfigMergerTest {
   }
 
   @Test
-  void nullListStrategyFallsBackToPreserveExisting() {
-    var options = new MergeOptions(false, false, null);
+  void builderDefaultsListStrategyToPreserveExisting() {
+    var options = MergeOptions.builder()
+      .updateComments(false)
+      .removeUnknown(false)
+      .build();
 
     assertEquals(MergeListStrategy.PRESERVE_EXISTING, options.listStrategy());
   }

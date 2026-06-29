@@ -14,11 +14,15 @@ import java.util.List;
 import java.util.Map;
 import net.pistonmaster.pistonconfig.core.ConfigCollectionStyle;
 import net.pistonmaster.pistonconfig.core.ConfigComment;
+import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
+import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
+import net.pistonmaster.pistonconfig.core.ConfigCommentType;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigLoader;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
+import net.pistonmaster.pistonconfig.core.ImmutableConfigNodeDecorations;
 
 /// TOML reader and writer backed by Night Config.
 public final class TomlConfigLoader implements ConfigLoader {
@@ -62,9 +66,19 @@ public final class TomlConfigLoader implements ConfigLoader {
       var child = fromValue(entry.getRawValue());
       var comment = entry.getComment();
       if (comment != null && !comment.isBlank()) {
-        child.setComment(new ConfigComment(comment.lines().map(String::stripLeading).toList(), ""));
+        child.setComment(ConfigComment.builder()
+          .addAllLeading(comment.lines()
+            .map(String::stripLeading)
+            .map(line -> ConfigCommentLine.builder()
+              .text(line)
+              .type(line.isEmpty() ? ConfigCommentType.BLANK : ConfigCommentType.BLOCK)
+              .marker(line.isEmpty() ? ConfigCommentMarker.NONE : ConfigCommentMarker.HASH)
+              .build())
+            .toList())
+          .build());
       }
-      child.decorate(decorations -> decorations.withCollectionStyle(ConfigCollectionStyle.TABLE));
+      child.decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+        .withCollectionStyle(ConfigCollectionStyle.TABLE));
       node.setNode(ConfigPath.of(entry.getKey()), child);
     }
     return node;

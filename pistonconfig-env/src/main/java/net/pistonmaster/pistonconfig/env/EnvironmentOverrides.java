@@ -5,6 +5,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
+import net.pistonmaster.pistonconfig.core.PistonStyle;
+import org.immutables.value.Value;
 
 /// Applies environment variable and system property overrides to a configuration
 /// document.
@@ -12,74 +14,81 @@ import net.pistonmaster.pistonconfig.core.ConfigDocument;
 /// Environment keys use uppercase underscore-separated names. System property
 /// keys use dotted names. Both are written into a [ConfigDocument] as parsed
 /// scalar values.
-public final class EnvironmentOverrides {
-  private final String environmentPrefix;
-  private final String propertyPrefix;
-  private final Map<String, String> environment;
-  private final Map<String, String> properties;
+@PistonStyle
+@Value.Immutable
+public interface EnvironmentOverrides {
+  /// Returns the environment variable prefix.
+  ///
+  /// @return environment variable prefix
+  @Value.Default
+  default String environmentPrefix() {
+    return "";
+  }
 
-  private EnvironmentOverrides(
-    String environmentPrefix,
-    String propertyPrefix,
-    Map<String, String> environment,
-    Map<String, String> properties
-  ) {
-    this.environmentPrefix = normalizeEnvironmentPrefix(environmentPrefix);
-    this.propertyPrefix = normalizePropertyPrefix(propertyPrefix);
-    this.environment = Map.copyOf(environment);
-    this.properties = Map.copyOf(properties);
+  /// Returns the system property prefix.
+  ///
+  /// @return system property prefix
+  @Value.Default
+  default String propertyPrefix() {
+    return "";
+  }
+
+  /// Returns the environment variable source map.
+  ///
+  /// @return environment variables
+  Map<String, String> environment();
+
+  /// Returns the system property source map.
+  ///
+  /// @return system properties
+  Map<String, String> properties();
+
+  /// Creates an Immutables builder for environment overrides.
+  ///
+  /// @return environment override builder
+  static ImmutableEnvironmentOverrides.Builder builder() {
+    return ImmutableEnvironmentOverrides.builder();
   }
 
   /// Creates overrides from the current process environment and system properties.
   ///
   /// @param prefix shared prefix used for both environment variables and system properties
   /// @return process-backed overrides
-  public static EnvironmentOverrides system(String prefix) {
+  static EnvironmentOverrides system(String prefix) {
     var properties = new LinkedHashMap<String, String>();
     System.getProperties().forEach((key, value) -> properties.put(key.toString(), value.toString()));
-    return new EnvironmentOverrides(prefix, prefix, System.getenv(), properties);
-  }
-
-  /// Creates overrides from explicit environment and property maps.
-  ///
-  /// @param environmentPrefix environment variable prefix
-  /// @param propertyPrefix system property prefix
-  /// @param environment environment variable map
-  /// @param properties system property map
-  /// @return override source
-  public static EnvironmentOverrides of(
-    String environmentPrefix,
-    String propertyPrefix,
-    Map<String, String> environment,
-    Map<String, String> properties
-  ) {
-    return new EnvironmentOverrides(
-      environmentPrefix,
-      propertyPrefix,
-      Objects.requireNonNull(environment, "environment"),
-      Objects.requireNonNull(properties, "properties")
-    );
+    return builder()
+      .environmentPrefix(prefix)
+      .propertyPrefix(prefix)
+      .putAllEnvironment(System.getenv())
+      .putAllProperties(properties)
+      .build();
   }
 
   /// Applies all matching overrides to a document in place.
   ///
   /// @param document target document
   /// @return the same document for chaining
-  public ConfigDocument applyTo(ConfigDocument document) {
+  default ConfigDocument applyTo(ConfigDocument document) {
     Objects.requireNonNull(document, "document");
 
-    for (Map.Entry<String, String> entry : environment.entrySet()) {
-      toEnvironmentPath(entry.getKey()).ifPresent(path -> document.set(path, parseScalar(entry.getValue())));
+    var normalizedEnvironmentPrefix = normalizeEnvironmentPrefix(environmentPrefix());
+    var normalizedPropertyPrefix = normalizePropertyPrefix(propertyPrefix());
+
+    for (Map.Entry<String, String> entry : environment().entrySet()) {
+      toEnvironmentPath(entry.getKey(), normalizedEnvironmentPrefix)
+        .ifPresent(path -> document.set(path, parseScalar(entry.getValue())));
     }
 
-    for (Map.Entry<String, String> entry : properties.entrySet()) {
-      toPropertyPath(entry.getKey()).ifPresent(path -> document.set(path, parseScalar(entry.getValue())));
+    for (Map.Entry<String, String> entry : properties().entrySet()) {
+      toPropertyPath(entry.getKey(), normalizedPropertyPrefix)
+        .ifPresent(path -> document.set(path, parseScalar(entry.getValue())));
     }
 
     return document;
   }
 
-  private java.util.Optional<String> toEnvironmentPath(String key) {
+  private static java.util.Optional<String> toEnvironmentPath(String key, String environmentPrefix) {
     var normalized = key.toUpperCase(Locale.ROOT);
     if (!environmentPrefix.isEmpty()) {
       var prefix = environmentPrefix + "_";
@@ -96,7 +105,7 @@ public final class EnvironmentOverrides {
     return java.util.Optional.of(normalized.toLowerCase(Locale.ROOT).replace('_', '.'));
   }
 
-  private java.util.Optional<String> toPropertyPath(String key) {
+  private static java.util.Optional<String> toPropertyPath(String key, String propertyPrefix) {
     if (!propertyPrefix.isEmpty()) {
       var prefix = propertyPrefix + ".";
       if (!key.startsWith(prefix)) {

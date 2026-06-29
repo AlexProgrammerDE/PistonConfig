@@ -6,6 +6,7 @@ import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import net.pistonmaster.pistonconfig.core.ConfigCollectionStyle;
 import net.pistonmaster.pistonconfig.core.ConfigComment;
@@ -16,9 +17,11 @@ import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigLoader;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
+import net.pistonmaster.pistonconfig.core.ConfigNodeDecorations;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
 import net.pistonmaster.pistonconfig.core.ConfigScalarStyle;
 import net.pistonmaster.pistonconfig.core.ConfigSourceLocation;
+import net.pistonmaster.pistonconfig.core.ImmutableConfigNodeDecorations;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -131,7 +134,8 @@ public final class YamlConfigLoader implements ConfigLoader {
       node = ConfigNode.scalar(rawValue);
     }
 
-    node.decorate(decorations -> decorations.withScalarStyle(scalarStyle(scalarNode.getScalarStyle())));
+    node.decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+      .withScalarStyle(scalarStyle(scalarNode.getScalarStyle())));
     node.setMetadata(YamlMetadataKeys.SCALAR_RAW, rawValue);
     return node;
   }
@@ -201,25 +205,30 @@ public final class YamlConfigLoader implements ConfigLoader {
 
   private static void applyValueDecorations(ConfigNode node, Node yamlNode) {
     node.setComment(comment(yamlNode));
-    node.decorate(decorations -> decorations.withValueLocation(location(yamlNode)));
+    node.decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+      .withValueLocation(location(yamlNode)));
 
     if (yamlNode.getTag() != null) {
-      node.decorate(decorations -> decorations.withAttribute(YamlMetadataKeys.TAG, yamlNode.getTag().getValue()));
+      node.decorate(decorations -> withAttribute(decorations, YamlMetadataKeys.TAG, yamlNode.getTag().getValue()));
     }
     if (yamlNode.getAnchor() != null) {
-      node.decorate(decorations -> decorations.withAttribute(YamlMetadataKeys.ANCHOR, yamlNode.getAnchor()));
+      node.decorate(decorations -> withAttribute(decorations, YamlMetadataKeys.ANCHOR, yamlNode.getAnchor()));
     }
     if (yamlNode instanceof CollectionNode<?> collectionNode) {
-      node.decorate(decorations -> decorations.withCollectionStyle(collectionStyle(collectionNode.getFlowStyle())));
+      node.decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+        .withCollectionStyle(collectionStyle(collectionNode.getFlowStyle())));
     }
   }
 
   private static void applyKeyDecorations(ConfigNode node, ScalarNode keyNode) {
-    node.decorate(decorations -> decorations
-      .withKeyComment(comment(keyNode))
-      .withKeyStyle(scalarStyle(keyNode.getScalarStyle()))
-      .withKeyLocation(location(keyNode))
-      .withAttribute(YamlMetadataKeys.KEY_TAG, keyNode.getTag().getValue()));
+    node.decorate(decorations -> withAttribute(
+      ImmutableConfigNodeDecorations.copyOf(decorations)
+        .withKeyComment(comment(keyNode))
+        .withKeyStyle(scalarStyle(keyNode.getScalarStyle()))
+        .withKeyLocation(location(keyNode)),
+      YamlMetadataKeys.KEY_TAG,
+      keyNode.getTag().getValue()
+    ));
   }
 
   private static void applyComments(Node yamlNode, ConfigComment comment) {
@@ -229,11 +238,11 @@ public final class YamlConfigLoader implements ConfigLoader {
   }
 
   private static ConfigComment comment(Node yamlNode) {
-    return new ConfigComment(
-      comments(yamlNode.getBlockComments(), ConfigCommentType.BLOCK),
-      comments(yamlNode.getInLineComments(), ConfigCommentType.INLINE),
-      comments(yamlNode.getEndComments(), ConfigCommentType.BLOCK)
-    );
+    return ConfigComment.builder()
+      .addAllLeading(comments(yamlNode.getBlockComments(), ConfigCommentType.BLOCK))
+      .addAllInline(comments(yamlNode.getInLineComments(), ConfigCommentType.INLINE))
+      .addAllTrailing(comments(yamlNode.getEndComments(), ConfigCommentType.BLOCK))
+      .build();
   }
 
   private static List<ConfigCommentLine> comments(List<CommentLine> comments, ConfigCommentType fallbackType) {
@@ -328,6 +337,20 @@ public final class YamlConfigLoader implements ConfigLoader {
       return ConfigSourceLocation.unknown();
     }
 
-    return ConfigSourceLocation.of(mark.getName(), mark.getLine(), mark.getColumn());
+    return ConfigSourceLocation.builder()
+      .description(mark.getName())
+      .line(mark.getLine())
+      .column(mark.getColumn())
+      .build();
+  }
+
+  private static ConfigNodeDecorations withAttribute(ConfigNodeDecorations decorations, String key, String value) {
+    var attributes = new LinkedHashMap<>(decorations.attributes());
+    if (value == null) {
+      attributes.remove(key);
+    } else {
+      attributes.put(key, value);
+    }
+    return ImmutableConfigNodeDecorations.copyOf(decorations).withAttributes(attributes);
   }
 }

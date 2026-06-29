@@ -37,8 +37,11 @@ Choose annotations when your application already has config classes and field de
 Static properties centralize typed keys.
 
 ```java
-static final ConfigProperty<Integer> PORT = ConfigProperty
-  .of("server.port", Integer.class, 25565);
+static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
+  .path(ConfigPath.parse("server.port"))
+  .type(Integer.class)
+  .defaultValue(25565)
+  .build();
 ```
 
 Choose static fields when keys are shared across code and you want one declaration for path, type, default, and comment.

@@ -87,9 +87,18 @@ var config = mapper.read(defaults, ServerConfig.class);
 
 ```java
 final class ServerOptions {
-  static final ConfigProperty<Integer> PORT = ConfigProperty
-    .of("server.port", Integer.class, 25565)
-    .withComment("Port used by the server.");
+  static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
+    .path(ConfigPath.parse("server.port"))
+    .type(Integer.class)
+    .defaultValue(25565)
+    .comment(ConfigComment.builder()
+      .addLeading(ConfigCommentLine.builder()
+        .text("Port used by the server.")
+        .type(ConfigCommentType.BLOCK)
+        .marker(ConfigCommentMarker.HASH)
+        .build())
+      .build())
+    .build();
 }
 
 var definition = StaticConfigDefinition.from(ServerOptions.class);
@@ -100,7 +109,10 @@ var document = definition.defaults(new ConfigCodecRegistry());
 
 ```java
 var registry = MigrationRegistry.builder()
-  .add(Migrations.migration(1, config -> Migrations.rename(config, "old.port", "server.port")))
+  .addMigration(ConfigMigration.builder()
+    .version(1)
+    .action(config -> Migrations.rename(config, "old.port", "server.port"))
+    .build())
   .build();
 
 registry.migrate(document);

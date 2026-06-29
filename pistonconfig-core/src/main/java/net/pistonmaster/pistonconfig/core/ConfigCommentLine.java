@@ -27,41 +27,4 @@ public interface ConfigCommentLine {
   static ImmutableConfigCommentLine.TextBuildStage builder() {
     return ImmutableConfigCommentLine.builder();
   }
-
-  /// Creates a block comment line.
-  ///
-  /// @param text comment text
-  /// @param marker source marker, or `null` for `ConfigCommentMarker.UNKNOWN`
-  /// @return block comment line
-  static ConfigCommentLine block(String text, ConfigCommentMarker marker) {
-    return builder()
-      .text(text == null ? "" : text)
-      .type(ConfigCommentType.BLOCK)
-      .marker(marker == null ? ConfigCommentMarker.UNKNOWN : marker)
-      .build();
-  }
-
-  /// Creates an inline comment line.
-  ///
-  /// @param text comment text
-  /// @param marker source marker, or `null` for `ConfigCommentMarker.UNKNOWN`
-  /// @return inline comment line
-  static ConfigCommentLine inline(String text, ConfigCommentMarker marker) {
-    return builder()
-      .text(text == null ? "" : text)
-      .type(ConfigCommentType.INLINE)
-      .marker(marker == null ? ConfigCommentMarker.UNKNOWN : marker)
-      .build();
-  }
-
-  /// Creates a blank comment line.
-  ///
-  /// @return blank comment line
-  static ConfigCommentLine blank() {
-    return builder()
-      .text("")
-      .type(ConfigCommentType.BLANK)
-      .marker(ConfigCommentMarker.NONE)
-      .build();
-  }
 }

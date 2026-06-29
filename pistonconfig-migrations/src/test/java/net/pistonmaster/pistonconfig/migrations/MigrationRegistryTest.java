@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
+import net.pistonmaster.pistonconfig.core.ConfigPath;
 import org.junit.jupiter.api.Test;
 
 final class MigrationRegistryTest {
@@ -16,8 +17,14 @@ final class MigrationRegistryTest {
       .set("old.enabled", true);
 
     var registry = MigrationRegistry.builder()
-      .add(Migrations.migration(1, config -> Migrations.rename(config, "old.enabled", "new.enabled")))
-      .add(Migrations.migration(2, config -> Migrations.setIfMissing(config, "new.mode", "auto")))
+      .addMigration(ConfigMigration.builder()
+        .version(1)
+        .action(config -> Migrations.rename(config, "old.enabled", "new.enabled"))
+        .build())
+      .addMigration(ConfigMigration.builder()
+        .version(2)
+        .action(config -> Migrations.setIfMissing(config, "new.mode", "auto"))
+        .build())
       .build();
 
     registry.migrate(document);
@@ -35,12 +42,18 @@ final class MigrationRegistryTest {
       .set("old.value", "kept");
 
     var registry = MigrationRegistry.builder()
-      .versionPath("schema")
-      .add(Migrations.migration(1, config -> calls.add(1)))
-      .add(Migrations.migration(2, config -> {
-        calls.add(2);
-        Migrations.rename(config, "old.value", "new.value");
-      }))
+      .versionPath(ConfigPath.parse("schema"))
+      .addMigration(ConfigMigration.builder()
+        .version(1)
+        .action(config -> calls.add(1))
+        .build())
+      .addMigration(ConfigMigration.builder()
+        .version(2)
+        .action(config -> {
+          calls.add(2);
+          Migrations.rename(config, "old.value", "new.value");
+        })
+        .build())
       .build();
 
     registry.migrate(document);
@@ -56,9 +69,18 @@ final class MigrationRegistryTest {
     var calls = new ArrayList<Integer>();
 
     MigrationRegistry.builder()
-      .add(Migrations.migration(3, config -> calls.add(3)))
-      .add(Migrations.migration(1, config -> calls.add(1)))
-      .add(Migrations.migration(2, config -> calls.add(2)))
+      .addMigration(ConfigMigration.builder()
+        .version(3)
+        .action(config -> calls.add(3))
+        .build())
+      .addMigration(ConfigMigration.builder()
+        .version(1)
+        .action(config -> calls.add(1))
+        .build())
+      .addMigration(ConfigMigration.builder()
+        .version(2)
+        .action(config -> calls.add(2))
+        .build())
       .build()
       .migrate(ConfigDocument.empty());
 

@@ -8,6 +8,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import net.pistonmaster.pistonconfig.core.ConfigCodecRegistry;
+import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
+import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
+import net.pistonmaster.pistonconfig.core.ConfigCommentType;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
@@ -58,7 +61,15 @@ public final class AnnotatedConfigMapper {
       var node = codecRegistry.encode(readField(field, config));
       var comment = field.getAnnotation(ConfigComment.class);
       if (comment != null) {
-        node.setComment(new net.pistonmaster.pistonconfig.core.ConfigComment(List.of(comment.value()), ""));
+        node.setComment(net.pistonmaster.pistonconfig.core.ConfigComment.builder()
+          .addAllLeading(Arrays.stream(comment.value())
+            .map(line -> ConfigCommentLine.builder()
+              .text(line)
+              .type(line.isEmpty() ? ConfigCommentType.BLANK : ConfigCommentType.BLOCK)
+              .marker(line.isEmpty() ? ConfigCommentMarker.NONE : ConfigCommentMarker.HASH)
+              .build())
+            .toList())
+          .build());
       }
       document.setNode(path, node);
     }

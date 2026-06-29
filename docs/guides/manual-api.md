@@ -69,11 +69,18 @@ Removing the root resets it to an empty object and returns the previous root as 
 ```java
 document.root()
   .getOrCreate(ConfigPath.parse("server.port"))
-  .setComment(ConfigComment.ofPlain(
-    List.of("Port used by the public listener."),
-    "Restart required",
-    List.of()
-  ));
+  .setComment(ConfigComment.builder()
+    .addLeading(ConfigCommentLine.builder()
+      .text("Port used by the public listener.")
+      .type(ConfigCommentType.BLOCK)
+      .marker(ConfigCommentMarker.HASH)
+      .build())
+    .addInline(ConfigCommentLine.builder()
+      .text("Restart required")
+      .type(ConfigCommentType.INLINE)
+      .marker(ConfigCommentMarker.HASH)
+      .build())
+    .build());
 ```
 
 `ConfigComment` separates leading, inline, and trailing comments. `ConfigCommentLine` keeps the logical type and source marker when the backend exposes them.
@@ -83,7 +90,7 @@ document.root()
 ```java
 document.root()
   .getOrCreate(ConfigPath.parse("server"))
-  .decorate(decorations -> decorations
+  .decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
     .withCollectionStyle(ConfigCollectionStyle.BLOCK));
 ```
 

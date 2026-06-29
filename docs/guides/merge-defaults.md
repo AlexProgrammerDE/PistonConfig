@@ -32,7 +32,7 @@ The user value stays in place. The missing default is added.
 
 ## Merge Options
 
-`MergeOptions` is a record with three fields, so you can build a custom mix when the two presets do not fit.
+`MergeOptions` uses an Immutables staged builder, so custom behavior is named at the call site instead of hidden behind positional booleans.
 
 | Field | Purpose |
 | --- | --- |
@@ -40,7 +40,7 @@ The user value stays in place. The missing default is added.
 | `removeUnknown` | Remove object keys that the defaults do not declare. |
 | `listStrategy` | How to merge when both the user value and the default are lists. |
 
-The presets cover the common cases. `MergeOptions.conservative()` is `(updateComments = true, removeUnknown = false, PRESERVE_EXISTING)`. `MergeOptions.exactDefaults()` is `(true, true, REPLACE)`.
+The presets cover the common cases. `MergeOptions.conservative()` refreshes comments, keeps unknown keys, and preserves existing lists. `MergeOptions.exactDefaults()` refreshes comments, removes unknown keys, and replaces lists.
 
 ## Exact Defaults
 
@@ -53,11 +53,11 @@ Exact defaults are useful for generated files where unknown keys should be remov
 ## List Strategies
 
 ```java
-var options = new MergeOptions(
-  true,                             // updateComments
-  false,                            // removeUnknown
-  MergeListStrategy.APPEND_MISSING
-);
+var options = MergeOptions.builder()
+  .updateComments(true)
+  .removeUnknown(false)
+  .listStrategy(MergeListStrategy.APPEND_MISSING)
+  .build();
 ```
 
 | Strategy | Behavior |
@@ -71,11 +71,11 @@ var options = new MergeOptions(
 When `updateComments` is true, defaults can refresh comments without replacing user values.
 
 ```java
-var options = new MergeOptions(
-  true,                                // refresh comments from defaults
-  false,                               // keep unknown user keys
-  MergeListStrategy.PRESERVE_EXISTING
-);
+var options = MergeOptions.builder()
+  .updateComments(true)
+  .removeUnknown(false)
+  .listStrategy(MergeListStrategy.PRESERVE_EXISTING)
+  .build();
 ```
 
 This is useful when your shipped defaults improve wording or add comments for new versions.

@@ -1,6 +1,5 @@
 package net.pistonmaster.pistonconfig.migrations;
 
-import java.util.function.Consumer;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
@@ -8,25 +7,6 @@ import net.pistonmaster.pistonconfig.core.ConfigPath;
 /// Helpers for common migration operations.
 public final class Migrations {
   private Migrations() {
-  }
-
-  /// Creates a migration from a version and action.
-  ///
-  /// @param version schema version produced by the migration
-  /// @param action action that mutates the document
-  /// @return config migration
-  public static ConfigMigration migration(int version, Consumer<ConfigDocument> action) {
-    return new ConfigMigration() {
-      @Override
-      public int version() {
-        return version;
-      }
-
-      @Override
-      public void migrate(ConfigDocument document) {
-        action.accept(document);
-      }
-    };
   }
 
   /// Renames a path when the source path exists.

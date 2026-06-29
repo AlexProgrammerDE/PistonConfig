@@ -9,6 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.StringReader;
 import java.io.StringWriter;
 import net.pistonmaster.pistonconfig.core.ConfigComment;
+import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
+import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
+import net.pistonmaster.pistonconfig.core.ConfigCommentType;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
@@ -61,7 +64,13 @@ final class JsonConfigLoaderTest {
     var document = ConfigDocument.empty()
       .setNode(ConfigPath.of("answer"), ConfigNode.scalar(16)
         .setMetadata(JsonMetadataKeys.NUMBER_RADIX, 16)
-        .setComment(ConfigComment.lines("Hex value.")))
+        .setComment(ConfigComment.builder()
+          .addLeading(ConfigCommentLine.builder()
+            .text("Hex value.")
+            .type(ConfigCommentType.BLOCK)
+            .marker(ConfigCommentMarker.DOUBLE_SLASH)
+            .build())
+          .build()))
       .setNode(ConfigPath.of("enabled"), ConfigNode.scalar(true))
       .setNode(ConfigPath.of("nothing"), ConfigNode.nullValue());
 

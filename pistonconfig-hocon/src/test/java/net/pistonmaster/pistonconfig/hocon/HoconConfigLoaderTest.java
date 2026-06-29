@@ -9,6 +9,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.StringReader;
 import java.io.StringWriter;
 import net.pistonmaster.pistonconfig.core.ConfigComment;
+import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
+import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
+import net.pistonmaster.pistonconfig.core.ConfigCommentType;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
@@ -54,7 +57,9 @@ final class HoconConfigLoaderTest {
   void savesNestedObjectsListsAndComments() {
     var document = ConfigDocument.empty()
       .setNode(ConfigPath.parse("server.host"), ConfigNode.scalar("localhost")
-        .setComment(ConfigComment.lines("Host comment.")))
+        .setComment(ConfigComment.builder()
+          .addLeading(commentLine("Host comment."))
+          .build()))
       .setNode(ConfigPath.parse("server.ports"), ConfigNode.list()
         .addListValue(25565)
         .addListValue(25566));
@@ -71,5 +76,13 @@ final class HoconConfigLoaderTest {
   @Test
   void wrapsInvalidHoconAsConfigException() {
     assertThrows(ConfigException.class, () -> new HoconConfigLoader().load(new StringReader("server = [")));
+  }
+
+  private static ConfigCommentLine commentLine(String text) {
+    return ConfigCommentLine.builder()
+      .text(text)
+      .type(ConfigCommentType.BLOCK)
+      .marker(ConfigCommentMarker.DOUBLE_SLASH)
+      .build();
   }
 }

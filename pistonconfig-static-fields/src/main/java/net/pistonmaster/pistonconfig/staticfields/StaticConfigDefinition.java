@@ -11,31 +11,33 @@ import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.MergeOptions;
+import net.pistonmaster.pistonconfig.core.PistonStyle;
+import org.immutables.value.Value;
 
 /// Collection of static [ConfigProperty] declarations.
 ///
 /// A definition can be built from a class that exposes `static` properties, then
 /// used to write defaults, merge defaults, and read typed values from a document.
-public final class StaticConfigDefinition {
-  private final List<ConfigProperty<?>> properties;
-
-  private StaticConfigDefinition(List<ConfigProperty<?>> properties) {
-    this.properties = List.copyOf(properties);
-  }
-
-  /// Creates a definition from explicit property declarations.
+@PistonStyle
+@Value.Immutable
+public interface StaticConfigDefinition {
+  /// Returns property declarations in deterministic path order.
   ///
-  /// @param properties property declarations
-  /// @return static config definition
-  public static StaticConfigDefinition of(List<ConfigProperty<?>> properties) {
-    return new StaticConfigDefinition(Objects.requireNonNull(properties, "properties"));
+  /// @return property declarations
+  List<ConfigProperty<?>> properties();
+
+  /// Creates an Immutables builder for static config definitions.
+  ///
+  /// @return static config definition builder
+  static ImmutableStaticConfigDefinition.Builder builder() {
+    return ImmutableStaticConfigDefinition.builder();
   }
 
   /// Reads all static [ConfigProperty] fields from a holder class.
   ///
   /// @param holderType class containing static property fields
   /// @return static config definition sorted by path
-  public static StaticConfigDefinition from(Class<?> holderType) {
+  static StaticConfigDefinition from(Class<?> holderType) {
     Objects.requireNonNull(holderType, "holderType");
 
     var properties = new ArrayList<ConfigProperty<?>>();
@@ -53,25 +55,18 @@ public final class StaticConfigDefinition {
     }
 
     properties.sort(Comparator.comparing(property -> property.path().toString()));
-    return new StaticConfigDefinition(properties);
-  }
-
-  /// Returns property declarations in deterministic path order.
-  ///
-  /// @return property declarations
-  public List<ConfigProperty<?>> properties() {
-    return properties;
+    return builder().addAllProperties(properties).build();
   }
 
   /// Builds a document containing every declared default value.
   ///
   /// @param codecRegistry registry used to encode default values
   /// @return defaults document
-  public ConfigDocument defaults(ConfigCodecRegistry codecRegistry) {
+  default ConfigDocument defaults(ConfigCodecRegistry codecRegistry) {
     Objects.requireNonNull(codecRegistry, "codecRegistry");
 
     var document = ConfigDocument.empty();
-    for (ConfigProperty<?> property : properties) {
+    for (ConfigProperty<?> property : properties()) {
       var node = codecRegistry.encode(property.defaultValue());
       node.setComment(property.comment());
       document.setNode(property.path(), node);
@@ -84,7 +79,7 @@ public final class StaticConfigDefinition {
   /// @param document target document
   /// @param codecRegistry registry used to encode default values
   /// @return the same document for chaining
-  public ConfigDocument applyDefaults(ConfigDocument document, ConfigCodecRegistry codecRegistry) {
+  default ConfigDocument applyDefaults(ConfigDocument document, ConfigCodecRegistry codecRegistry) {
     Objects.requireNonNull(document, "document");
     document.mergeDefaults(defaults(codecRegistry), MergeOptions.conservative());
     return document;
@@ -97,7 +92,7 @@ public final class StaticConfigDefinition {
   /// @param codecRegistry registry used to decode the stored value
   /// @param <T> value type
   /// @return decoded value, or the property default when the path is missing
-  public <T> T get(ConfigDocument document, ConfigProperty<T> property, ConfigCodecRegistry codecRegistry) {
+  default <T> T get(ConfigDocument document, ConfigProperty<T> property, ConfigCodecRegistry codecRegistry) {
     Objects.requireNonNull(document, "document");
     Objects.requireNonNull(property, "property");
     Objects.requireNonNull(codecRegistry, "codecRegistry");

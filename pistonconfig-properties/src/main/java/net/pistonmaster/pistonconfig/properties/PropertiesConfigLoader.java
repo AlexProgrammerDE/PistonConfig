@@ -5,6 +5,7 @@ import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import net.pistonmaster.pistonconfig.core.ConfigCollectionStyle;
 import net.pistonmaster.pistonconfig.core.ConfigComment;
@@ -16,6 +17,7 @@ import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigLoader;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
+import net.pistonmaster.pistonconfig.core.ImmutableConfigNodeDecorations;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.PropertiesConfigurationLayout;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -54,21 +56,25 @@ public final class PropertiesConfigLoader implements ConfigLoader {
       if (comment != null && !comment.isBlank()) {
         node.setComment(parseComment(comment));
       }
-      node.decorate(decorations -> decorations
+      var attributes = new LinkedHashMap<String, String>();
+      var separator = layout.getSeparator(key);
+      if (separator != null) {
+        attributes.put(PropertiesMetadataKeys.SEPARATOR, separator);
+      }
+      attributes.put(PropertiesMetadataKeys.SINGLE_LINE, Boolean.toString(layout.isSingleLine(key)));
+      attributes.put(PropertiesMetadataKeys.BLANK_LINES_BEFORE, Integer.toString(layout.getBlankLinesBefore(key)));
+      node.decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
         .withCollectionStyle(ConfigCollectionStyle.INLINE)
-        .withAttribute(PropertiesMetadataKeys.SEPARATOR, layout.getSeparator(key))
-        .withAttribute(PropertiesMetadataKeys.SINGLE_LINE, Boolean.toString(layout.isSingleLine(key)))
-        .withAttribute(PropertiesMetadataKeys.BLANK_LINES_BEFORE, Integer.toString(layout.getBlankLinesBefore(key))));
+        .withAttributes(attributes));
 
       document.setNode(ConfigPath.parse(key), node);
     }
 
     if (layout.getHeaderComment() != null || layout.getFooterComment() != null) {
-      document.root().setComment(new ConfigComment(
-        layout.getHeaderComment() == null ? List.of() : parseCommentLines(layout.getHeaderComment()),
-        List.of(),
-        layout.getFooterComment() == null ? List.of() : parseCommentLines(layout.getFooterComment())
-      ));
+      document.root().setComment(ConfigComment.builder()
+        .addAllLeading(layout.getHeaderComment() == null ? List.of() : parseCommentLines(layout.getHeaderComment()))
+        .addAllTrailing(layout.getFooterComment() == null ? List.of() : parseCommentLines(layout.getFooterComment()))
+        .build());
     }
 
     return document;
@@ -157,11 +163,9 @@ public final class PropertiesConfigLoader implements ConfigLoader {
   }
 
   private static ConfigComment parseComment(String comment) {
-    return new ConfigComment(
-      parseCommentLines(comment),
-      List.of(),
-      List.of()
-    );
+    return ConfigComment.builder()
+      .addAllLeading(parseCommentLines(comment))
+      .build();
   }
 
   private static List<ConfigCommentLine> parseCommentLines(String comment) {
@@ -173,7 +177,11 @@ public final class PropertiesConfigLoader implements ConfigLoader {
   private static ConfigCommentLine parseCommentLine(String rawLine) {
     var line = rawLine.stripLeading();
     if (line.isEmpty()) {
-      return ConfigCommentLine.blank();
+      return ConfigCommentLine.builder()
+        .text("")
+        .type(ConfigCommentType.BLANK)
+        .marker(ConfigCommentMarker.NONE)
+        .build();
     }
 
     var marker = ConfigCommentMarker.UNKNOWN;

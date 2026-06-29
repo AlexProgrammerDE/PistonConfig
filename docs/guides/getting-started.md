@@ -33,7 +33,13 @@ var defaults = ConfigDocument.empty()
 
 defaults.root()
   .getOrCreate(ConfigPath.parse("server.port"))
-  .setComment(ConfigComment.lines("Port used by the public listener."));
+  .setComment(ConfigComment.builder()
+    .addLeading(ConfigCommentLine.builder()
+      .text("Port used by the public listener.")
+      .type(ConfigCommentType.BLOCK)
+      .marker(ConfigCommentMarker.HASH)
+      .build())
+    .build());
 ```
 
 ## Load the User File

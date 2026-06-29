@@ -1,96 +1,61 @@
 package net.pistonmaster.pistonconfig.migrations;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
+import net.pistonmaster.pistonconfig.core.PistonStyle;
+import org.immutables.value.Value;
 
 /// Applies ordered configuration migrations and stores the resulting schema
 /// version in the document.
-public final class MigrationRegistry {
-  private final ConfigPath versionPath;
-  private final List<ConfigMigration> migrations;
-
-  private MigrationRegistry(ConfigPath versionPath, List<ConfigMigration> migrations) {
-    this.versionPath = Objects.requireNonNull(versionPath, "versionPath");
-    this.migrations = migrations.stream()
-      .sorted(Comparator.comparingInt(ConfigMigration::version))
-      .toList();
+@PistonStyle
+@Value.Immutable
+public interface MigrationRegistry {
+  /// Returns the path that stores the current schema version.
+  ///
+  /// @return schema version path
+  @Value.Default
+  default ConfigPath versionPath() {
+    return ConfigPath.parse("config.version");
   }
 
-  /// Creates a registry from an explicit version path and migration list.
+  /// Returns migrations to apply.
   ///
-  /// @param versionPath path that stores the current schema version
-  /// @param migrations migrations to apply in version order
-  /// @return migration registry
-  public static MigrationRegistry of(ConfigPath versionPath, List<ConfigMigration> migrations) {
-    return new MigrationRegistry(versionPath, Objects.requireNonNull(migrations, "migrations"));
-  }
+  /// @return configured migrations
+  List<ConfigMigration> migrations();
 
-  /// Creates a builder for a migration registry.
+  /// Creates an Immutables builder for migration registries.
   ///
-  /// @return registry builder
-  public static Builder builder() {
-    return new Builder();
+  /// @return migration registry builder
+  static ImmutableMigrationRegistry.Builder builder() {
+    return ImmutableMigrationRegistry.builder();
   }
 
   /// Applies every migration newer than the document's current version.
   ///
   /// @param document document to migrate
   /// @return the same document for chaining
-  public ConfigDocument migrate(ConfigDocument document) {
+  default ConfigDocument migrate(ConfigDocument document) {
     Objects.requireNonNull(document, "document");
 
-    int currentVersion = document.find(versionPath)
+    int currentVersion = document.find(versionPath())
       .flatMap(node -> node.asInt())
       .orElse(0);
 
-    for (ConfigMigration migration : migrations) {
+    for (ConfigMigration migration : migrations().stream()
+      .sorted(Comparator.comparingInt(ConfigMigration::version))
+      .toList()) {
       if (migration.version() <= currentVersion) {
         continue;
       }
 
       migration.migrate(document);
       currentVersion = migration.version();
-      document.set(versionPath, currentVersion);
+      document.set(versionPath(), currentVersion);
     }
 
     return document;
-  }
-
-  /// Builder for [MigrationRegistry].
-  public static final class Builder {
-    private final List<ConfigMigration> migrations = new ArrayList<>();
-    private ConfigPath versionPath = ConfigPath.parse("config.version");
-
-    private Builder() {
-    }
-
-    /// Sets the path used to store the current schema version.
-    ///
-    /// @param versionPath dotted path for the schema version
-    /// @return this builder
-    public Builder versionPath(String versionPath) {
-      this.versionPath = ConfigPath.parse(versionPath);
-      return this;
-    }
-
-    /// Adds a migration.
-    ///
-    /// @param migration migration to register
-    /// @return this builder
-    public Builder add(ConfigMigration migration) {
-      migrations.add(Objects.requireNonNull(migration, "migration"));
-      return this;
-    }
-
-    /// Builds the migration registry.
-    ///
-    /// @return migration registry
-    public MigrationRegistry build() {
-      return new MigrationRegistry(versionPath, migrations);
-    }
   }
 }

@@ -1,7 +1,6 @@
 package net.pistonmaster.pistonconfig.env;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,19 +17,20 @@ final class EnvironmentOverridesTest {
       .set("server.port", 25565)
       .set("server.host", "0.0.0.0");
 
-    EnvironmentOverrides.of(
-      "my-app",
-      "my.app",
-      Map.of(
+    EnvironmentOverrides.builder()
+      .environmentPrefix("my-app")
+      .propertyPrefix("my.app")
+      .putAllEnvironment(Map.of(
         "MY_APP_SERVER_PORT", "25566",
         "MY_APP_SERVER_ENABLED", "true",
         "OTHER_SERVER_PORT", "1"
-      ),
-      Map.of(
+      ))
+      .putAllProperties(Map.of(
         "my.app.server.host", "127.0.0.1",
         "my.app.server.ratio", "0.75"
-      )
-    ).applyTo(document);
+      ))
+      .build()
+      .applyTo(document);
 
     assertEquals(25566, document.find("server.port").flatMap(node -> node.asInt()).orElseThrow());
     assertTrue(document.find("server.enabled").orElseThrow().asBoolean().orElseThrow());
@@ -43,12 +43,13 @@ final class EnvironmentOverridesTest {
   void systemPropertiesOverrideEnvironmentWhenTheyTargetSamePath() {
     var document = ConfigDocument.empty();
 
-    EnvironmentOverrides.of(
-      "app",
-      "app",
-      Map.of("APP_SERVER_PORT", "25565"),
-      Map.of("app.server.port", "25566")
-    ).applyTo(document);
+    EnvironmentOverrides.builder()
+      .environmentPrefix("app")
+      .propertyPrefix("app")
+      .putAllEnvironment(Map.of("APP_SERVER_PORT", "25565"))
+      .putAllProperties(Map.of("app.server.port", "25566"))
+      .build()
+      .applyTo(document);
 
     assertEquals(25566, document.find("server.port").flatMap(node -> node.asInt()).orElseThrow());
   }
@@ -57,12 +58,11 @@ final class EnvironmentOverridesTest {
   void emptyPrefixesApplyEveryNonBlankKey() {
     var document = ConfigDocument.empty();
 
-    EnvironmentOverrides.of(
-      "",
-      null,
-      Map.of("SERVER_PORT", "25565"),
-      Map.of("server.host", "localhost")
-    ).applyTo(document);
+    EnvironmentOverrides.builder()
+      .putAllEnvironment(Map.of("SERVER_PORT", "25565"))
+      .putAllProperties(Map.of("server.host", "localhost"))
+      .build()
+      .applyTo(document);
 
     assertEquals(25565, document.find("server.port").flatMap(node -> node.asInt()).orElseThrow());
     assertEquals("localhost", document.find("server.host").orElseThrow().asString().orElseThrow());
@@ -72,7 +72,11 @@ final class EnvironmentOverridesTest {
   void copiesInputMapsDefensively() {
     var environment = new LinkedHashMap<String, String>();
     environment.put("APP_SERVER_PORT", "25565");
-    var overrides = EnvironmentOverrides.of("app", "app", environment, Map.of());
+    var overrides = EnvironmentOverrides.builder()
+      .environmentPrefix("app")
+      .propertyPrefix("app")
+      .putAllEnvironment(environment)
+      .build();
 
     environment.put("APP_SERVER_PORT", "1");
 
@@ -86,7 +90,12 @@ final class EnvironmentOverridesTest {
   void leavesNonNumericStringsAsStrings() {
     var document = ConfigDocument.empty();
 
-    EnvironmentOverrides.of("app", "app", Map.of("APP_SERVER_MODE", "production"), Map.of()).applyTo(document);
+    EnvironmentOverrides.builder()
+      .environmentPrefix("app")
+      .propertyPrefix("app")
+      .putAllEnvironment(Map.of("APP_SERVER_MODE", "production"))
+      .build()
+      .applyTo(document);
 
     var value = document.find("server.mode").orElseThrow().rawValue();
     assertInstanceOf(String.class, value);
@@ -95,8 +104,8 @@ final class EnvironmentOverridesTest {
 
   @Test
   void rejectsNullInputs() {
-    assertThrows(NullPointerException.class, () -> EnvironmentOverrides.of("app", "app", null, Map.of()));
-    assertThrows(NullPointerException.class, () -> EnvironmentOverrides.of("app", "app", Map.of(), null));
-    assertThrows(NullPointerException.class, () -> EnvironmentOverrides.of("app", "app", Map.of(), Map.of()).applyTo(null));
+    assertThrows(NullPointerException.class, () -> EnvironmentOverrides.builder().putAllEnvironment(null));
+    assertThrows(NullPointerException.class, () -> EnvironmentOverrides.builder().putAllProperties(null));
+    assertThrows(NullPointerException.class, () -> EnvironmentOverrides.builder().build().applyTo(null));
   }
 }

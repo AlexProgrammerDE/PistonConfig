@@ -37,12 +37,12 @@ Environment names are normalized to uppercase. Dots and hyphens in the prefix be
 ## Use Explicit Maps in Tests
 
 ```java
-var overrides = EnvironmentOverrides.of(
-  "myapp",
-  "myapp",
-  Map.of("MYAPP_SERVER_PORT", "25566"),
-  Map.of("myapp.server.host", "127.0.0.1")
-);
+var overrides = EnvironmentOverrides.builder()
+  .environmentPrefix("myapp")
+  .propertyPrefix("myapp")
+  .putAllEnvironment(Map.of("MYAPP_SERVER_PORT", "25566"))
+  .putAllProperties(Map.of("myapp.server.host", "127.0.0.1"))
+  .build();
 
 overrides.applyTo(document);
 ```

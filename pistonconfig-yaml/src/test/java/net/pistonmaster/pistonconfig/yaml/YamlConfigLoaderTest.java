@@ -11,13 +11,18 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Map;
 import net.pistonmaster.pistonconfig.core.ConfigCollectionStyle;
 import net.pistonmaster.pistonconfig.core.ConfigComment;
+import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
+import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
+import net.pistonmaster.pistonconfig.core.ConfigCommentType;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
 import net.pistonmaster.pistonconfig.core.ConfigScalarStyle;
 import net.pistonmaster.pistonconfig.core.ConfigValueKind;
+import net.pistonmaster.pistonconfig.core.ImmutableConfigNodeDecorations;
 import org.junit.jupiter.api.Test;
 
 final class YamlConfigLoaderTest {
@@ -102,13 +107,17 @@ final class YamlConfigLoaderTest {
   void savesScalarStylesRawNumericValuesAndAnchors() {
     var document = net.pistonmaster.pistonconfig.core.ConfigDocument.empty()
       .setNode(ConfigPath.of("name"), ConfigNode.scalar("quoted")
-        .decorate(decorations -> decorations.withScalarStyle(ConfigScalarStyle.SINGLE_QUOTED))
-        .setComment(ConfigComment.inline("name comment")))
+        .decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+          .withScalarStyle(ConfigScalarStyle.SINGLE_QUOTED))
+        .setComment(ConfigComment.builder()
+          .addInline(commentLine("name comment", ConfigCommentType.INLINE))
+          .build()))
       .setNode(ConfigPath.of("answer"), ConfigNode.scalar(16)
         .setMetadata(YamlMetadataKeys.SCALAR_RAW, "0x10"))
       .setNode(ConfigPath.of("settings"), ConfigNode.object()
         .set(ConfigPath.of("enabled"), true)
-        .decorate(decorations -> decorations.withAttribute(YamlMetadataKeys.ANCHOR, "settings")));
+        .decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+          .withAttributes(Map.of(YamlMetadataKeys.ANCHOR, "settings"))));
 
     var writer = new StringWriter();
     new YamlConfigLoader().save(document, writer);
@@ -123,5 +132,13 @@ final class YamlConfigLoaderTest {
   @Test
   void wrapsInvalidYamlAsConfigException() {
     assertThrows(ConfigException.class, () -> new YamlConfigLoader().load(new StringReader("broken: [")));
+  }
+
+  private static ConfigCommentLine commentLine(String text, ConfigCommentType type) {
+    return ConfigCommentLine.builder()
+      .text(text)
+      .type(type)
+      .marker(ConfigCommentMarker.HASH)
+      .build();
   }
 }

@@ -33,8 +33,11 @@ Use codecs for records, value objects, and reusable nested config shapes.
 ## Static Properties Bind Path and Type
 
 ```java
-static final ConfigProperty<Integer> PORT = ConfigProperty
-  .of("server.port", Integer.class, 25565);
+static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
+  .path(ConfigPath.parse("server.port"))
+  .type(Integer.class)
+  .defaultValue(25565)
+  .build();
 ```
 
 The declaration carries the path, Java type, default value, and comments together.

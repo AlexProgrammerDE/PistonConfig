@@ -37,7 +37,13 @@ final class ConfigNodeTest {
   @Test
   void setNodeCopiesReplacement() {
     var replacement = ConfigNode.scalar("initial")
-      .setComment(ConfigComment.lines("comment"));
+      .setComment(ConfigComment.builder()
+        .addLeading(ConfigCommentLine.builder()
+          .text("comment")
+          .type(ConfigCommentType.BLOCK)
+          .marker(ConfigCommentMarker.HASH)
+          .build())
+        .build());
     var object = ConfigNode.object().setNode(ConfigPath.of("value"), replacement);
 
     replacement.set(ConfigPath.root(), "changed");
@@ -69,12 +75,15 @@ final class ConfigNodeTest {
     var original = ConfigNode.object()
       .set(ConfigPath.of("port"), 25565)
       .setMetadata("source", "default")
-      .setDecorations(ConfigNodeDecorations.empty().withAttribute("style", "block"));
+      .setDecorations(ConfigNodeDecorations.builder()
+        .putAttribute("style", "block")
+        .build());
 
     var copy = original.copy();
     copy.set(ConfigPath.of("port"), 25566);
     copy.setMetadata("source", "copy");
-    copy.decorate(decorations -> decorations.withAttribute("style", "flow"));
+    copy.decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+      .withAttributes(Map.of("style", "flow")));
 
     assertEquals(25565, original.find(ConfigPath.of("port")).flatMap(ConfigNode::asInt).orElseThrow());
     assertEquals("default", original.metadata("source").orElseThrow());

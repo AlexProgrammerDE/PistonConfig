@@ -18,12 +18,16 @@ import java.util.List;
 import java.util.Map;
 import net.pistonmaster.pistonconfig.core.ConfigCollectionStyle;
 import net.pistonmaster.pistonconfig.core.ConfigComment;
+import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
+import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
+import net.pistonmaster.pistonconfig.core.ConfigCommentType;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigLoader;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
 import net.pistonmaster.pistonconfig.core.ConfigSourceLocation;
+import net.pistonmaster.pistonconfig.core.ImmutableConfigNodeDecorations;
 
 /// HOCON reader and writer backed by Lightbend Config.
 public final class HoconConfigLoader implements ConfigLoader {
@@ -79,13 +83,28 @@ public final class HoconConfigLoader implements ConfigLoader {
 
     var comments = value.origin().comments();
     if (comments != null && !comments.isEmpty()) {
-      node.setComment(new ConfigComment(comments.stream().map(String::stripLeading).toList(), ""));
+      node.setComment(ConfigComment.builder()
+        .addAllLeading(comments.stream()
+          .map(String::stripLeading)
+          .map(comment -> ConfigCommentLine.builder()
+            .text(comment)
+            .type(comment.isEmpty() ? ConfigCommentType.BLANK : ConfigCommentType.BLOCK)
+            .marker(comment.isEmpty() ? ConfigCommentMarker.NONE : ConfigCommentMarker.DOUBLE_SLASH)
+            .build())
+          .toList())
+        .build());
     }
-    node.decorate(decorations -> decorations
-      .withValueLocation(ConfigSourceLocation.of(value.origin().description(), value.origin().lineNumber(), -1))
+    var attributes = new LinkedHashMap<String, String>();
+    attributes.put(HoconMetadataKeys.ORIGIN_DESCRIPTION, value.origin().description());
+    attributes.put(HoconMetadataKeys.RENDERED, value.render(ConfigRenderOptions.concise().setComments(true).setJson(false)));
+    node.decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+      .withValueLocation(ConfigSourceLocation.builder()
+        .description(value.origin().description())
+        .line(value.origin().lineNumber())
+        .column(-1)
+        .build())
       .withCollectionStyle(value.valueType() == ConfigValueType.OBJECT ? ConfigCollectionStyle.BLOCK : decorations.collectionStyle())
-      .withAttribute(HoconMetadataKeys.ORIGIN_DESCRIPTION, value.origin().description())
-      .withAttribute(HoconMetadataKeys.RENDERED, value.render(ConfigRenderOptions.concise().setComments(true).setJson(false))));
+      .withAttributes(attributes));
     return node;
   }
 

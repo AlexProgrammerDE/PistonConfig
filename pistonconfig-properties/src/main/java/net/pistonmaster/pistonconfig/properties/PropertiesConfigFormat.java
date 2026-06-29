@@ -36,7 +36,13 @@ public final class PropertiesConfigFormat implements ConfigFormat {
   /// @return backend capabilities
   @Override
   public ConfigFormatCapabilities capabilities() {
-    return new ConfigFormatCapabilities(true, false, true, false, false);
+    return ConfigFormatCapabilities.builder()
+      .blockComments(true)
+      .inlineComments(false)
+      .ordering(true)
+      .typedScalars(false)
+      .lists(false)
+      .build();
   }
 
   /// Returns the shared properties loader.

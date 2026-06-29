@@ -68,8 +68,11 @@ var config = mapper.read(defaults, ServerConfig.class);
 
 ```java
 final class ServerOptions {
-  static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty
-    .of("endpoint", Endpoint.class, new Endpoint("localhost", 25565));
+  static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty.<Endpoint>builder()
+    .path(ConfigPath.parse("endpoint"))
+    .type(Endpoint.class)
+    .defaultValue(new Endpoint("localhost", 25565))
+    .build();
 }
 
 var definition = StaticConfigDefinition.from(ServerOptions.class);

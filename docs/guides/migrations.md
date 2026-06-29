@@ -22,15 +22,21 @@ dependencies {
 
 ```java
 var registry = MigrationRegistry.builder()
-  .versionPath("config.version")
-  .add(Migrations.migration(1, config -> {
-    Migrations.rename(config, "server.bind", "server.host");
-    Migrations.setIfMissing(config, "server.port", 25565);
-  }))
-  .add(Migrations.migration(2, config -> {
-    Migrations.copy(config, "server.host", "network.host");
-    Migrations.remove(config, "legacy");
-  }))
+  .versionPath(ConfigPath.parse("config.version"))
+  .addMigration(ConfigMigration.builder()
+    .version(1)
+    .action(config -> {
+      Migrations.rename(config, "server.bind", "server.host");
+      Migrations.setIfMissing(config, "server.port", 25565);
+    })
+    .build())
+  .addMigration(ConfigMigration.builder()
+    .version(2)
+    .action(config -> {
+      Migrations.copy(config, "server.host", "network.host");
+      Migrations.remove(config, "legacy");
+    })
+    .build())
   .build();
 ```
 

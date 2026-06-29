@@ -18,9 +18,11 @@ Store the schema version inside the document:
 
 ```java
 MigrationRegistry.builder()
-  .versionPath("config.version")
-  .add(Migrations.migration(1, config ->
-    Migrations.rename(config, "server.bind", "server.host")))
+  .versionPath(ConfigPath.parse("config.version"))
+  .addMigration(ConfigMigration.builder()
+    .version(1)
+    .action(config -> Migrations.rename(config, "server.bind", "server.host"))
+    .build())
   .build();
 ```
 

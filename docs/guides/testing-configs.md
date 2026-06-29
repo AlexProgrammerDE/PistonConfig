@@ -51,8 +51,10 @@ void migrationRenamesBindToHost() {
     .set("server.bind", "127.0.0.1");
 
   MigrationRegistry.builder()
-    .add(Migrations.migration(1, config ->
-      Migrations.rename(config, "server.bind", "server.host")))
+    .addMigration(ConfigMigration.builder()
+      .version(1)
+      .action(config -> Migrations.rename(config, "server.bind", "server.host"))
+      .build())
     .build()
     .migrate(document);
 
@@ -74,7 +76,13 @@ void yamlRoundTripKeepsComment() {
 
   document.root()
     .getOrCreate(ConfigPath.parse("server.port"))
-    .setComment(ConfigComment.lines("Public listener port."));
+    .setComment(ConfigComment.builder()
+      .addLeading(ConfigCommentLine.builder()
+        .text("Public listener port.")
+        .type(ConfigCommentType.BLOCK)
+        .marker(ConfigCommentMarker.HASH)
+        .build())
+      .build());
 
   var output = new StringWriter();
   loader.save(document, output);
@@ -89,12 +97,11 @@ Round-trip tests should be scoped to backend features that matter to your applic
 ## Test Environment Overrides With Explicit Maps
 
 ```java
-var overrides = EnvironmentOverrides.of(
-  "app",
-  "app",
-  Map.of("APP_SERVER_PORT", "25566"),
-  Map.of()
-);
+var overrides = EnvironmentOverrides.builder()
+  .environmentPrefix("app")
+  .propertyPrefix("app")
+  .putAllEnvironment(Map.of("APP_SERVER_PORT", "25566"))
+  .build();
 
 overrides.applyTo(document);
 ```

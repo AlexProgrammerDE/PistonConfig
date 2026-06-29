@@ -43,7 +43,7 @@ The core module defines a format-neutral mutable tree with separate layers for v
 | Inline | Comment on the same logical line as the node. |
 | Trailing | Lines after the node, such as YAML end comments. |
 
-`ConfigCommentLine` records:
+Each `ConfigCommentLine` stores:
 
 | Field | Examples |
 | --- | --- |
