@@ -5,6 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ page.title | default: site.title }}</title>
     <meta name="description" content="{{ page.description | default: site.description }}">
+    <meta name="theme-color" content="#fbfbf8" data-theme-color>
+    <link rel="icon" href="{{ '/assets/img/mark.svg' | relative_url }}" type="image/svg+xml">
+    <script>
+      (function () {
+        var key = "pistonconfig-theme";
+        var theme = "light";
+
+        try {
+          var stored = window.localStorage.getItem(key);
+          var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+          theme = stored === "dark" || stored === "light" ? stored : prefersDark ? "dark" : "light";
+        } catch (error) {
+          theme = "light";
+        }
+
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
     <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
     {% seo %}
   </head>
@@ -14,12 +33,18 @@
         <img src="{{ '/assets/img/mark.svg' | relative_url }}" alt="" width="28" height="28">
         <span>PistonConfig</span>
       </a>
-      <nav class="top-nav" aria-label="Main navigation">
-        <a href="{{ '/guides/getting-started.html' | relative_url }}">Start</a>
-        <a href="{{ '/guides/installation.html' | relative_url }}">Install</a>
-        <a href="{{ '/reference/modules.html' | relative_url }}">Reference</a>
-        <a href="https://github.com/AlexProgrammerDE/PistonConfig">GitHub</a>
-      </nav>
+      <div class="header-actions">
+        <nav class="top-nav" aria-label="Main navigation">
+          <a href="{{ '/guides/getting-started.html' | relative_url }}">Start</a>
+          <a href="{{ '/guides/installation.html' | relative_url }}">Install</a>
+          <a href="{{ '/reference/modules.html' | relative_url }}">Reference</a>
+          <a href="https://github.com/AlexProgrammerDE/PistonConfig">GitHub</a>
+        </nav>
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">
+          <span class="theme-toggle-icon" aria-hidden="true"></span>
+          <span data-theme-toggle-label>Dark</span>
+        </button>
+      </div>
     </header>
     <div class="shell">
       <aside class="sidebar" aria-label="Documentation navigation">

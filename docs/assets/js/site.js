@@ -1,4 +1,66 @@
 (function () {
+  const themeStorageKey = "pistonconfig-theme";
+  const root = document.documentElement;
+  const themeToggle = document.querySelector("[data-theme-toggle]");
+  const themeToggleLabel = document.querySelector("[data-theme-toggle-label]");
+  const themeColor = document.querySelector("[data-theme-color]");
+  const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+  const storedTheme = () => {
+    try {
+      const value = window.localStorage.getItem(themeStorageKey);
+      return value === "dark" || value === "light" ? value : null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const systemTheme = () => darkQuery && darkQuery.matches ? "dark" : "light";
+
+  const applyTheme = (theme, persist) => {
+    root.dataset.theme = theme;
+    root.style.colorScheme = theme;
+
+    if (themeColor) {
+      themeColor.setAttribute("content", theme === "dark" ? "#11120f" : "#fbfbf8");
+    }
+
+    if (themeToggle && themeToggleLabel) {
+      const nextTheme = theme === "dark" ? "light" : "dark";
+      themeToggleLabel.textContent = nextTheme === "dark" ? "Dark" : "Light";
+      themeToggle.setAttribute("aria-label", `Switch to ${nextTheme} mode`);
+      themeToggle.setAttribute("aria-pressed", String(theme === "dark"));
+    }
+
+    if (persist) {
+      try {
+        window.localStorage.setItem(themeStorageKey, theme);
+      } catch (error) {
+        // Theme persistence is optional.
+      }
+    }
+  };
+
+  applyTheme(root.dataset.theme === "dark" || root.dataset.theme === "light" ? root.dataset.theme : storedTheme() || systemTheme(), false);
+
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+      applyTheme(root.dataset.theme === "dark" ? "light" : "dark", true);
+    });
+  }
+
+  const handleSystemThemeChange = () => {
+    if (!storedTheme()) {
+      applyTheme(systemTheme(), false);
+    }
+  };
+
+  if (darkQuery?.addEventListener) {
+    darkQuery.addEventListener("change", handleSystemThemeChange);
+  } else if (darkQuery?.addListener) {
+    darkQuery.addListener(handleSystemThemeChange);
+  }
+
   const currentPath = window.location.pathname.replace(/\/$/, "/index.html");
 
   document.querySelectorAll(".sidebar a").forEach((link) => {
