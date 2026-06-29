@@ -1,12 +1,12 @@
 ---
 layout: default
 title: Static Field Configs
-description: Declare typed static config keys with defaults and comments.
+description: Declare typed static config keys with defaults, comments, stores, and validation.
 ---
 
 # Static Field Configs
 
-Use `pistonconfig-static-fields` when you want a central registry of typed keys, similar to ConfigMe-style property declarations.
+Use `pistonconfig-static-fields` when config keys need to be shared across application code. Each property keeps its path, type, default value, and comment in one declaration.
 
 ## Add the Module
 
@@ -15,85 +15,143 @@ dependencies {
   implementation(platform("net.pistonmaster:pistonconfig-bom:0.1.0-SNAPSHOT"))
   implementation("net.pistonmaster:pistonconfig-core")
   implementation("net.pistonmaster:pistonconfig-static-fields")
+  implementation("net.pistonmaster:pistonconfig-yaml")
 }
 ```
 
 ## Declare Properties
 
 ```java
-final class ServerOptions {
-  static final ConfigProperty<String> HOST = ConfigProperty.<String>builder()
-    .path(ConfigPath.parse("server.host"))
-    .type(String.class)
-    .defaultValue("0.0.0.0")
-    .comment(comment("Address used by the public listener."))
-    .build();
+final class ServerOptions implements StaticConfigComments {
+  @ConfigComment("Address used by the public listener.")
+  static final ConfigProperty<String> HOST =
+    ConfigProperty.of("server.host", String.class, "0.0.0.0");
 
-  static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
-    .path(ConfigPath.parse("server.port"))
-    .type(Integer.class)
-    .defaultValue(25565)
-    .comment(comment("Port used by the public listener."))
-    .build();
+  @ConfigComment("Port used by the public listener.")
+  static final ConfigProperty<Integer> PORT =
+    ConfigProperty.of("server.port", Integer.class, 25565);
 
-  private static ConfigComment comment(String text) {
-    return ConfigComment.builder()
-      .addLeading(ConfigCommentLine.builder()
-        .text(text)
-        .type(ConfigCommentType.BLOCK)
-        .marker(ConfigCommentMarker.HASH)
-        .build())
-      .build();
+  static final ConfigProperty<List<String>> FLAGS = ConfigProperty.of(
+    "server.flags",
+    ConfigType.listOf(ConfigType.of(String.class)),
+    List.of("default")
+  ).withComment("Feature flags enabled at startup.");
+
+  private ServerOptions() {
+  }
+
+  @Override
+  public void registerComments(StaticConfigCommentRegistry comments) {
+    comments.setRootComment("Server configuration.");
+    comments.setComment("server", "Network listener settings.");
   }
 }
 ```
 
-Each property carries a path, Java type, default value, and comment.
+`ConfigProperty.of` covers simple codec-backed types. Use `ConfigType` for parameterized values such as lists, sets, maps, optionals, and arrays.
 
-## Build a Definition
+## Update a File
 
 ```java
-var codecs = new ConfigCodecRegistry();
-var definition = StaticConfigDefinition.from(ServerOptions.class);
+var store = StaticConfigStore.builder()
+  .holders(ServerOptions.class)
+  .format(YamlConfigFormat.INSTANCE)
+  .options(StaticConfigStoreOptions.builder()
+    .unknownKeyPolicy(StaticUnknownKeyPolicy.PRESERVE)
+    .invalidValuePolicy(StaticInvalidValuePolicy.FALLBACK_AND_REWRITE)
+    .build())
+  .build();
+
+var session = store.update(Path.of("config.yml"));
 ```
 
-The definition reads static `ConfigProperty<?>` fields and sorts them by path for stable output.
+`update` creates the file when it is missing, runs configured document migrations, merges defaults, refreshes generated comments, rewrites invalid declared values when configured, saves the document, and returns a stateful session.
 
-## Generate Defaults
+## Read and Write Values
 
 ```java
-var defaults = definition.defaults(codecs);
+int port = session.get(ServerOptions.PORT);
+
+session.set(ServerOptions.PORT, 25566);
+session.save();
+session.reload();
 ```
 
-The default document can be merged into a loaded user document:
+Use `resolve` when code needs to know whether a value came from the source document or from a fallback:
 
 ```java
-definition.applyDefaults(document, codecs);
+var value = session.resolve(ServerOptions.PORT);
+
+if (value.requiresRewrite()) {
+  logger.warn("Using default for {}", value.property().path());
+}
 ```
 
-## Read Values
+Direct `StaticConfigDefinition.get` stays strict for present values. It returns the default only when the path is missing.
+
+## Use Parameterized Types
 
 ```java
-int port = definition.get(document, ServerOptions.PORT, codecs);
+enum Mode {
+  DEV,
+  PROD
+}
+
+record Endpoint(String host, int port) {
+}
+
+static final ConfigProperty<Map<Mode, Endpoint>> ENDPOINTS = ConfigProperty.of(
+  "server.endpoints",
+  ConfigType.mapOf(ConfigType.of(Mode.class), ConfigType.of(Endpoint.class)),
+  Map.of(Mode.DEV, new Endpoint("localhost", 8080))
+).withComment("Endpoint per runtime mode.");
 ```
 
-If the document is missing the path, `get` returns the property's default value. If the node exists, it decodes through the registry.
-
-## Use Custom Property Types
+Register a codec for custom simple values:
 
 ```java
-static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty.<Endpoint>builder()
-  .path(ConfigPath.parse("endpoint"))
-  .type(Endpoint.class)
-  .defaultValue(new Endpoint("localhost", 25565))
+var codecs = new ConfigCodecRegistry()
+  .register(Endpoint.class, new ConfigCodec<Endpoint>() {
+    @Override
+    public ConfigNode encode(Endpoint value, ConfigCodecRegistry registry) {
+      return ConfigNode.object()
+        .set(ConfigPath.of("host"), value.host())
+        .set(ConfigPath.of("port"), value.port());
+    }
+
+    @Override
+    public Endpoint decode(ConfigNode node, ConfigCodecRegistry registry) {
+      return new Endpoint(
+        node.find(ConfigPath.of("host")).flatMap(ConfigNode::asString).orElseThrow(),
+        node.find(ConfigPath.of("port")).flatMap(ConfigNode::asInt).orElseThrow()
+      );
+    }
+  });
+```
+
+Then pass the registry to the store:
+
+```java
+var store = StaticConfigStore.builder()
+  .holders(ServerOptions.class)
+  .format(YamlConfigFormat.INSTANCE)
+  .codecRegistry(codecs)
   .build();
 ```
 
-Register a matching codec before generating defaults or reading values.
+## Validate Holder Classes
 
-## When to Choose This Style
+Use `StaticConfigDefinitionValidator` in unit tests:
 
-<div class="decision">
-  <h3>Choose static fields when keys are shared across code.</h3>
-  <p>They make call sites explicit, avoid repeated string paths, and keep defaults close to the key definition.</p>
-</div>
+```java
+@Test
+void staticConfigDeclarationsAreValid() {
+  new StaticConfigDefinitionValidator().validate(ServerOptions.class);
+}
+```
+
+The default validation checks that property fields are `static final`, holder classes are final with one private no-args constructor, every property has a comment, comment lines fit the default length limit, enum comments list every enum constant, and defaults can encode and decode.
+
+## When to Choose Static Fields
+
+Choose static fields when config keys are used in multiple services, commands, or libraries. Choose annotation configs when the application wants one typed config object as its startup boundary.

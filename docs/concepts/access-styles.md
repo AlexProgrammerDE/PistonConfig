@@ -41,14 +41,20 @@ Choose annotations when your application wants a config object as the startup bo
 Static properties centralize typed keys.
 
 ```java
-static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
-  .path(ConfigPath.parse("server.port"))
-  .type(Integer.class)
-  .defaultValue(25565)
-  .build();
+@ConfigComment("Public listener port.")
+static final ConfigProperty<Integer> PORT =
+  ConfigProperty.of("server.port", Integer.class, 25565);
+
+var session = StaticConfigStore.builder()
+  .holders(ServerOptions.class)
+  .format(YamlConfigFormat.INSTANCE)
+  .build()
+  .update(Path.of("config.yml"));
+
+int port = session.get(PORT);
 ```
 
-Choose static fields when keys are shared across code and you want one declaration for path, type, default, and comment.
+Choose static fields when keys are shared across code and you want one declaration for path, type, default, comments, and store behavior.
 
 ## Custom Serialization
 
@@ -67,7 +73,7 @@ Choose typed serializers for annotation configs. Choose core codecs for static f
 | --- | --- |
 | Full tree control | Manual API |
 | Typed config object | Annotation store |
-| Shared typed keys | Static fields |
+| Shared typed keys | Static field store |
 | Domain value objects | Custom serialization |
 | Deployment overrides | Environment module |
 | Release upgrades | Migration module |

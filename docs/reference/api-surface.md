@@ -44,7 +44,7 @@ Each format module depends on core and exposes a singleton `ConfigFormat` named 
 | Module | Main types |
 | --- | --- |
 | `pistonconfig-annotations` | `ConfigStore`, `ConfigStores`, `AnnotatedConfigMapper`, `ConfigMapperOptions`, `ConfigSerializer`, `ConfigSerializeWith`, `ConfigPolymorphic`, `ConfigComment`, `ConfigIgnore`, `ConfigName`, `ConfigPathPrefix` |
-| `pistonconfig-static-fields` | `ConfigProperty<T>`, `StaticConfigDefinition` |
+| `pistonconfig-static-fields` | `ConfigProperty<T>`, `ConfigType<T>`, `StaticConfigDefinition`, `StaticConfigStore`, `StaticConfigSession`, `StaticConfigStoreOptions`, `StaticConfigDefinitionValidator`, `ConfigComment`, `StaticConfigComments` |
 | `pistonconfig-env` | `EnvironmentOverrides` |
 | `pistonconfig-migrations` | `MigrationRegistry`, `ConfigMigration`, `Migrations` |
 
@@ -63,8 +63,6 @@ PistonConfig uses Immutables for value objects and option types:
 | `ConfigNodeDecorations` | `ImmutableConfigNodeDecorations` |
 | `ConfigSourceLocation` | `ImmutableConfigSourceLocation` |
 | `ObjectValue`, `ListValue`, `ScalarValue` | `ImmutableObjectValue`, `ImmutableListValue`, `ImmutableScalarValue` |
-| `ConfigProperty` | `ImmutableConfigProperty` |
-| `StaticConfigDefinition` | `ImmutableStaticConfigDefinition` |
 | `EnvironmentOverrides` | `ImmutableEnvironmentOverrides` |
 | `ConfigMigration`, `MigrationRegistry` | `ImmutableConfigMigration`, `ImmutableMigrationRegistry` |
 

@@ -37,14 +37,17 @@ Use typed stores for records, object configs, nested collections, maps, and vali
 ## Static Properties Bind Path and Type
 
 ```java
-static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
-  .path(ConfigPath.parse("server.port"))
-  .type(Integer.class)
-  .defaultValue(25565)
-  .build();
+static final ConfigProperty<Integer> PORT =
+  ConfigProperty.of("server.port", Integer.class, 25565);
+
+static final ConfigProperty<List<String>> FLAGS = ConfigProperty.of(
+  "server.flags",
+  ConfigType.listOf(ConfigType.of(String.class)),
+  List.of("default")
+);
 ```
 
-The declaration carries the path, Java type, default value, and comments together.
+The declaration carries the path, `ConfigType<T>`, default value, and comments together. `ConfigType` preserves generic shapes for lists, sets, maps, optionals, and arrays.
 
 ## Annotations Bind Members and Defaults
 
@@ -68,7 +71,7 @@ This is convenient when the application wants a config object rather than scatte
 var endpoint = codecs.decode(node, Endpoint.class);
 ```
 
-Use codecs for static properties or direct document integrations. Use typed serializers for annotation configs.
+Use codecs for simple static property values or direct document integrations. Use typed serializers for annotation configs.
 
 ## Boundary Rule
 

@@ -42,6 +42,17 @@ void staticDefaultsIncludeComments() {
 
 Default tests are useful when annotations or static properties are the source of truth for generated files.
 
+## Test Static Holder Quality
+
+```java
+@Test
+void staticConfigDeclarationsAreValid() {
+  new StaticConfigDefinitionValidator().validate(ServerOptions.class);
+}
+```
+
+The validator checks static final property fields, final holder classes, hidden no-args constructors, comments, enum comment completeness, and default encode/decode behavior.
+
 ## Test Migrations
 
 ```java

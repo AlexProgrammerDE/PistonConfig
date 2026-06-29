@@ -11,54 +11,44 @@ This example uses static properties when many classes need to read the same keys
 ## Registry
 
 ```java
-final class ServerOptions {
-  static final ConfigProperty<String> HOST = ConfigProperty.<String>builder()
-    .path(ConfigPath.parse("server.host"))
-    .type(String.class)
-    .defaultValue("0.0.0.0")
-    .comment(comment("Address used by the public listener."))
-    .build();
+final class ServerOptions implements StaticConfigComments {
+  @ConfigComment("Address used by the public listener.")
+  static final ConfigProperty<String> HOST =
+    ConfigProperty.of("server.host", String.class, "0.0.0.0");
 
-  static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
-    .path(ConfigPath.parse("server.port"))
-    .type(Integer.class)
-    .defaultValue(25565)
-    .comment(comment("Port used by the public listener."))
-    .build();
+  @ConfigComment("Port used by the public listener.")
+  static final ConfigProperty<Integer> PORT =
+    ConfigProperty.of("server.port", Integer.class, 25565);
 
-  static final ConfigProperty<Boolean> METRICS = ConfigProperty.<Boolean>builder()
-    .path(ConfigPath.parse("features.metrics"))
-    .type(Boolean.class)
-    .defaultValue(true)
-    .comment(comment("Whether metrics should be collected."))
-    .build();
+  @ConfigComment("Whether metrics should be collected.")
+  static final ConfigProperty<Boolean> METRICS =
+    ConfigProperty.of("features.metrics", Boolean.class, true);
 
   private ServerOptions() {
   }
 
-  private static ConfigComment comment(String text) {
-    return ConfigComment.builder()
-      .addLeading(ConfigCommentLine.builder()
-        .text(text)
-        .type(ConfigCommentType.BLOCK)
-        .marker(ConfigCommentMarker.HASH)
-        .build())
-      .build();
+  @Override
+  public void registerComments(StaticConfigCommentRegistry comments) {
+    comments.setRootComment("Application configuration.");
+    comments.setComment("server", "Network listener settings.");
+    comments.setComment("features", "Feature toggles.");
   }
 }
 ```
 
-## Defaults and Reads
+## Store and Reads
 
 ```java
-var codecs = new ConfigCodecRegistry();
-var definition = StaticConfigDefinition.from(ServerOptions.class);
+var store = StaticConfigStore.builder()
+  .holders(ServerOptions.class)
+  .format(YamlConfigFormat.INSTANCE)
+  .build();
 
-definition.applyDefaults(document, codecs);
+var session = store.update(Path.of("config.yml"));
 
-var host = definition.get(document, ServerOptions.HOST, codecs);
-var port = definition.get(document, ServerOptions.PORT, codecs);
-var metrics = definition.get(document, ServerOptions.METRICS, codecs);
+var host = session.get(ServerOptions.HOST);
+var port = session.get(ServerOptions.PORT);
+var metrics = session.get(ServerOptions.METRICS);
 ```
 
 ## Why It Helps
@@ -68,6 +58,7 @@ var metrics = definition.get(document, ServerOptions.METRICS, codecs);
 | Repeated string paths | Paths live in one declaration. |
 | Missing defaults | Each key carries its own default value. |
 | Comments drift | Comments stay near the key they describe. |
-| Type mistakes | Reads use the declared `Class<T>`. |
+| Type mistakes | Reads use the declared `ConfigType<T>`. |
+| File lifecycle | `StaticConfigStore` handles update, save, reload, and typed access. |
 
 Static properties are a good fit for libraries, plugins, and larger applications where config keys are used in multiple places.

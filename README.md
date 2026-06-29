@@ -15,7 +15,7 @@ The Maven group is `net.pistonmaster`. Module artifacts use the format `pistonco
 | `pistonconfig-toml` | Night Config-backed TOML backend with commented config support. |
 | `pistonconfig-hocon` | Lightbend Config-backed HOCON backend. |
 | `pistonconfig-annotations` | Type-aware object config mapper and generic config store API. |
-| `pistonconfig-static-fields` | ConfigMe-style static `ConfigProperty<T>` declarations. |
+| `pistonconfig-static-fields` | ConfigMe-style static `ConfigProperty<T>` declarations, typed static stores, and holder validation. |
 | `pistonconfig-env` | System property and environment variable overrides. |
 | `pistonconfig-migrations` | Flyway-style ordered config migrations. |
 
@@ -103,22 +103,18 @@ The typed mapper supports records, POJOs with no-args constructors, nested objec
 
 ```java
 final class ServerOptions {
-  static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
-    .path(ConfigPath.parse("server.port"))
-    .type(Integer.class)
-    .defaultValue(25565)
-    .comment(ConfigComment.builder()
-      .addLeading(ConfigCommentLine.builder()
-        .text("Port used by the server.")
-        .type(ConfigCommentType.BLOCK)
-        .marker(ConfigCommentMarker.HASH)
-        .build())
-      .build())
-    .build();
+  @ConfigComment("Port used by the server.")
+  static final ConfigProperty<Integer> PORT =
+    ConfigProperty.of("server.port", Integer.class, 25565);
 }
 
-var definition = StaticConfigDefinition.from(ServerOptions.class);
-var document = definition.defaults(new ConfigCodecRegistry());
+var session = StaticConfigStore.builder()
+  .holders(ServerOptions.class)
+  .format(YamlConfigFormat.INSTANCE)
+  .build()
+  .update(Path.of("config.yml"));
+
+int port = session.get(ServerOptions.PORT);
 ```
 
 ## Migrations

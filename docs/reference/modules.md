@@ -30,7 +30,7 @@ Use the BOM unless a parent build already manages PistonConfig versions.
 | `pistonconfig-toml` | core | Night Config | TOML parser and writer support with commented configs. |
 | `pistonconfig-hocon` | core | Lightbend Config | HOCON parsing, origin comments, and rendered source attributes. |
 | `pistonconfig-annotations` | core | none | Type-aware object mapping and generic config stores. |
-| `pistonconfig-static-fields` | core | none | Static `ConfigProperty<T>` declarations. |
+| `pistonconfig-static-fields` | core | none | Static `ConfigProperty<T>` declarations, parameterized `ConfigType<T>` tokens, static stores, and holder validation. |
 | `pistonconfig-env` | core | none | Environment variable and system property overrides. |
 | `pistonconfig-migrations` | core | none | Ordered document migrations with stored schema version. |
 
