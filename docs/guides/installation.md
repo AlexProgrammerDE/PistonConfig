@@ -6,13 +6,26 @@ description: Install PistonConfig with Gradle, Maven, Maven Central, and GitHub 
 
 # Installation
 
-PistonConfig publishes every module under the `net.pistonmaster` group. Module artifacts use the `pistonconfig-<module>` naming pattern.
+PistonConfig modules are published under the `net.pistonmaster` group. Runtime artifacts use the `pistonconfig-<module>` naming pattern.
+
+## Requirements
+
+| Requirement | Value |
+| --- | --- |
+| Java | 25 |
+| Group ID | `net.pistonmaster` |
+| Recommended version alignment | `pistonconfig-bom` |
+| Release repositories | Maven Central and GitHub Packages |
 
 ## Gradle With the BOM
 
-Use the BOM when an application needs more than one PistonConfig module. It keeps all module versions aligned.
+Use the BOM for applications that depend on more than one module.
 
 ```kotlin
+repositories {
+  mavenCentral()
+}
+
 dependencies {
   implementation(platform("net.pistonmaster:pistonconfig-bom:0.1.0-SNAPSHOT"))
   implementation("net.pistonmaster:pistonconfig-core")
@@ -29,6 +42,8 @@ dependencies {
   implementation("net.pistonmaster:pistonconfig-yaml:0.1.0-SNAPSHOT")
 }
 ```
+
+Use this form for tiny examples or when a parent build already manages dependency versions.
 
 ## Maven With the BOM
 
@@ -57,19 +72,9 @@ dependencies {
 </dependencies>
 ```
 
-## Maven Central
-
-Release artifacts are deployed to Maven Central. Most Gradle and Maven projects already include Maven Central:
-
-```kotlin
-repositories {
-  mavenCentral()
-}
-```
-
 ## GitHub Packages
 
-Releases are also published to GitHub Packages. GitHub Packages requires authentication even for public packages.
+GitHub Packages is configured as a release target. GitHub requires authenticated Maven access even for public packages.
 
 ```kotlin
 repositories {
@@ -84,18 +89,28 @@ repositories {
 }
 ```
 
-In GitHub Actions, use `GITHUB_ACTOR` and `GITHUB_TOKEN`. Locally, use a GitHub token with package read access.
+In GitHub Actions, `GITHUB_ACTOR` and `GITHUB_TOKEN` are enough for repository workflows. Locally, use a token that can read packages.
 
 ## Pick Modules
 
-Start with `pistonconfig-core` and one format backend. Add higher-level modules only when the application needs that style.
+Start with `pistonconfig-core` and one format backend. Add higher-level modules only for the access style or operation you need.
 
 | Need | Modules |
 | --- | --- |
 | YAML files | `pistonconfig-core`, `pistonconfig-yaml` |
 | TOML files | `pistonconfig-core`, `pistonconfig-toml` |
 | HOCON files | `pistonconfig-core`, `pistonconfig-hocon` |
+| JSON, JSONC, or JSON5 files | `pistonconfig-core`, `pistonconfig-json` |
+| `.properties` files | `pistonconfig-core`, `pistonconfig-properties` |
 | Annotation mapping | `pistonconfig-core`, `pistonconfig-annotations` |
-| Static keys | `pistonconfig-core`, `pistonconfig-static-fields` |
-| Runtime overrides | `pistonconfig-core`, `pistonconfig-env` |
+| Static typed keys | `pistonconfig-core`, `pistonconfig-static-fields` |
+| Environment overrides | `pistonconfig-core`, `pistonconfig-env` |
 | Versioned migrations | `pistonconfig-core`, `pistonconfig-migrations` |
+
+## Verify the Dependency Graph
+
+```bash
+./gradlew dependencies --configuration runtimeClasspath
+```
+
+The BOM should align every `net.pistonmaster:pistonconfig-*` artifact to the same version.

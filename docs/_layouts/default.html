@@ -28,6 +28,9 @@
           <a href="{{ '/guides/getting-started.html' | relative_url }}">Getting Started</a>
           <a href="{{ '/guides/installation.html' | relative_url }}">Installation</a>
           <a href="{{ '/guides/manual-api.html' | relative_url }}">Manual API</a>
+          <a href="{{ '/guides/format-backends.html' | relative_url }}">Format Backends</a>
+          <a href="{{ '/guides/merge-defaults.html' | relative_url }}">Merge Defaults</a>
+          <a href="{{ '/guides/custom-codecs.html' | relative_url }}">Custom Codecs</a>
           <a href="{{ '/guides/annotation-configs.html' | relative_url }}">Annotation Configs</a>
           <a href="{{ '/guides/static-field-configs.html' | relative_url }}">Static Fields</a>
           <a href="{{ '/guides/environment-overrides.html' | relative_url }}">Environment Overrides</a>
@@ -42,12 +45,18 @@
         </div>
         <div class="nav-section">
           <p>Concepts</p>
+          <a href="{{ '/concepts/design-goals.html' | relative_url }}">Design Goals</a>
           <a href="{{ '/concepts/lossless-configuration.html' | relative_url }}">Lossless Configuration</a>
         </div>
       </aside>
       <main class="page">
         {{ content }}
       </main>
+      <aside class="toc" aria-label="Page outline">
+        <p>On This Page</p>
+        <nav id="page-toc"></nav>
+      </aside>
     </div>
+    <script src="{{ '/assets/js/site.js' | relative_url }}"></script>
   </body>
 </html>

@@ -8,6 +8,16 @@ description: Override config values from environment variables and system proper
 
 Use `pistonconfig-env` when deployment systems need to override file values without editing the config file.
 
+## Add the Module
+
+```kotlin
+dependencies {
+  implementation(platform("net.pistonmaster:pistonconfig-bom:0.1.0-SNAPSHOT"))
+  implementation("net.pistonmaster:pistonconfig-core")
+  implementation("net.pistonmaster:pistonconfig-env")
+}
+```
+
 ## Apply System Overrides
 
 ```java
@@ -22,9 +32,9 @@ With the `myapp` prefix:
 | Environment | `MYAPP_DATABASE_POOL_SIZE=12` | `database.pool.size` |
 | System property | `-Dmyapp.server.host=127.0.0.1` | `server.host` |
 
-Environment names are normalized to uppercase, `_` is converted to `.`, and the prefix may be written with dots or hyphens.
+Environment names are normalized to uppercase. Dots and hyphens in the prefix become underscores. Environment variable underscores become path dots.
 
-## Test With Explicit Maps
+## Use Explicit Maps in Tests
 
 ```java
 var overrides = EnvironmentOverrides.of(
@@ -37,17 +47,29 @@ var overrides = EnvironmentOverrides.of(
 overrides.applyTo(document);
 ```
 
-Using explicit maps keeps tests deterministic and avoids depending on the process environment.
+This avoids depending on the process environment in tests.
+
+## Override Precedence
+
+Environment variables are applied first. System properties are applied after environment variables, so a system property can override the same path.
 
 ## Scalar Conversion
-
-Override values are parsed as:
 
 | Raw value | Stored value |
 | --- | --- |
 | `true`, `false` | `Boolean` |
-| Integer-like values | `Long` |
-| Decimal values | `Double` |
-| Other values | `String` |
+| Integer-like value | `Long` |
+| Decimal value | `Double` |
+| Anything else | `String` |
 
-Format loaders still decide how those Java scalar values are rendered when the document is saved.
+The selected format backend controls how those scalar values render when saved.
+
+## Recommended Order
+
+Apply overrides after migrations and defaults:
+
+```java
+registry.migrate(document);
+document.mergeDefaults(defaults, MergeOptions.conservative());
+EnvironmentOverrides.system("myapp").applyTo(document);
+```

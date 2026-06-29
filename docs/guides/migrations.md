@@ -6,7 +6,17 @@ description: Apply ordered schema migrations to configuration documents.
 
 # Migrations
 
-Use `pistonconfig-migrations` when an application release changes config paths, defaults, or schema expectations.
+Use `pistonconfig-migrations` when a release changes config paths, defaults, or schema expectations.
+
+## Add the Module
+
+```kotlin
+dependencies {
+  implementation(platform("net.pistonmaster:pistonconfig-bom:0.1.0-SNAPSHOT"))
+  implementation("net.pistonmaster:pistonconfig-core")
+  implementation("net.pistonmaster:pistonconfig-migrations")
+}
+```
 
 ## Create a Registry
 
@@ -34,7 +44,7 @@ registry.migrate(document);
 
 Run migrations after loading a file and before reading application values. Migrations mutate the document in place.
 
-## Common Operations
+## Built-In Operations
 
 | Helper | Purpose |
 | --- | --- |
@@ -43,12 +53,19 @@ Run migrations after loading a file and before reading application values. Migra
 | `Migrations.remove(document, path)` | Delete a node. |
 | `Migrations.setIfMissing(document, path, value)` | Add a scalar default only when no value exists. |
 
-## Workflow
+## Versioning Rules
+
+- Use monotonically increasing integer versions.
+- Keep migrations deterministic and idempotent.
+- Avoid reading runtime environment state inside migrations.
+- Keep migrations focused on document shape, not application startup side effects.
+
+## Full Startup Order
 
 1. Load the user's file.
-2. Apply migrations.
+2. Run migrations.
 3. Merge current defaults.
 4. Apply environment and system property overrides.
 5. Save the migrated document.
 
-This keeps old files readable while preserving user edits.
+This order keeps older files readable while preserving user edits.

@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Publishing
-description: Release publishing targets and artifacts.
+description: Release publishing targets, artifacts, and validation commands.
 ---
 
 # Publishing
@@ -44,7 +44,8 @@ Java library modules publish:
 - Main JAR.
 - Sources JAR.
 - Javadocs JAR.
-- Signed Maven metadata for release publishing.
+- Maven metadata.
+- Signatures for release publishing.
 
 The BOM is a Java Platform publication. It publishes a POM that constrains all PistonConfig module versions.
 
@@ -57,3 +58,14 @@ The BOM is a Java Platform publication. It publishes a POM that constrains all P
 ```
 
 The GitHub Packages publish task needs credentials when it is run without `--dry-run`.
+
+## Release Inputs
+
+| Secret | Used by |
+| --- | --- |
+| `SIGNING_IN_MEMORY_KEY` | Gradle signing and JReleaser signing |
+| `SIGNING_IN_MEMORY_KEY_PASSWORD` | Gradle signing and JReleaser signing |
+| `SIGNING_PUBLIC_KEY` | JReleaser |
+| `MAVEN_CENTRAL_USERNAME` | JReleaser Maven Central deploy |
+| `MAVEN_CENTRAL_PASSWORD` | JReleaser Maven Central deploy |
+| `GITHUB_TOKEN` | GitHub release metadata and GitHub Packages |

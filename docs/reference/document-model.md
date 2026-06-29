@@ -1,12 +1,12 @@
 ---
 layout: default
 title: Document Model
-description: Reference for core document, node, comment, path, decoration, and codec types.
+description: Reference for core document, node, comment, path, decoration, metadata, and codec types.
 ---
 
 # Document Model
 
-The core module defines a format-neutral tree that can represent normal configuration values plus source information from richer file formats.
+The core module defines a format-neutral mutable tree with separate layers for values, human comments, common source decorations, and backend-specific metadata.
 
 ## Main Types
 
@@ -14,11 +14,11 @@ The core module defines a format-neutral tree that can represent normal configur
 | --- | --- |
 | `ConfigDocument` | Complete config with an object root. |
 | `ConfigNode` | Mutable tree node. A node is an object, list, scalar, or null. |
-| `ConfigValueKind` | Enum for the node kind. |
 | `ConfigPath` | Immutable path of object keys. |
 | `ConfigComment` | Leading, inline, and trailing comment groups. |
 | `ConfigCommentLine` | One comment line with text, marker, and logical type. |
 | `ConfigNodeDecorations` | Source details shared across formats. |
+| `ConfigValue` | Sealed immutable value model for codecs and adapters. |
 | `ConfigCodec<T>` | Encoder and decoder for Java value types. |
 | `ConfigCodecRegistry` | Registry of built-in and custom codecs. |
 | `ConfigLoader` | Reader and writer for a concrete format. |
@@ -26,16 +26,16 @@ The core module defines a format-neutral tree that can represent normal configur
 
 ## Node Kinds
 
-| Kind | Java shape |
+| Kind | Shape |
 | --- | --- |
-| Object | Ordered map of `String` keys to `ConfigNode` children. |
-| List | Ordered list of `ConfigNode` children. |
-| Scalar | Java scalar value such as `String`, `Boolean`, `Number`, or backend scalar. |
-| Null | Explicit null value. |
+| `OBJECT` | Ordered map of `String` keys to child nodes. |
+| `LIST` | Ordered list of child nodes. |
+| `SCALAR` | Java scalar value such as `String`, `Boolean`, `Number`, or backend scalar. |
+| `NULL` | Explicit null value. |
 
 ## Comments
 
-`ConfigComment` stores comments in three positions:
+`ConfigComment` stores source comments in three positions:
 
 | Position | Meaning |
 | --- | --- |
@@ -43,23 +43,36 @@ The core module defines a format-neutral tree that can represent normal configur
 | Inline | Comment on the same logical line as the node. |
 | Trailing | Lines after the node, such as YAML end comments. |
 
-`ConfigCommentLine` stores the text, the marker, and the type. This lets format modules distinguish hash comments, slash comments, blank lines, block comments, and unknown markers where the backend exposes them.
+`ConfigCommentLine` records:
+
+| Field | Examples |
+| --- | --- |
+| `text()` | `Port used by the public listener.` |
+| `type()` | `BLOCK`, `INLINE`, `BLANK` |
+| `marker()` | `HASH`, `DOUBLE_SLASH`, `EXCLAMATION`, `UNKNOWN` |
 
 ## Decorations
 
-`ConfigNodeDecorations` stores information that is common enough to be represented directly:
+`ConfigNodeDecorations` stores source detail that is common enough to model directly:
 
 | Decoration | Purpose |
 | --- | --- |
 | `keyComment()` | Comment attached to the key rather than the value. |
 | `keyStyle()` | Scalar style for a key. |
 | `scalarStyle()` | Scalar style for a scalar value. |
-| `collectionStyle()` | Block, flow, table, or unspecified collection style. |
-| `keyLocation()` | Source location for the key. |
-| `valueLocation()` | Source location for the value. |
-| `attributes()` | String attributes that do not deserve a dedicated core field. |
+| `collectionStyle()` | Block, flow, table, inline, array-table, or unspecified style. |
+| `keyLocation()` | Best-effort source location for the key. |
+| `valueLocation()` | Best-effort source location for the value. |
+| `attributes()` | String attributes that are useful but not common enough for a dedicated field. |
 
-Backend-specific information belongs in `metadata()` or decoration attributes with constants from the format module.
+## Metadata
+
+`ConfigNode.metadata()` stores backend-specific values. Use constants from the relevant module instead of raw strings.
+
+```java
+node.metadata(JsonMetadataKeys.NUMBER_RADIX)
+  .ifPresent(radix -> log.debug("JSON5 radix {}", radix));
+```
 
 ## Paths
 
@@ -69,8 +82,18 @@ ConfigPath.of("server", "port");
 ConfigPath.parse("database\\.url");
 ```
 
-`ConfigPath.parse(...)` uses dots as separators and backslash as the escape character. `ConfigPath.of(...)` accepts literal segments.
+`ConfigPath.parse(...)` uses dots as separators and backslash as the escape character. `ConfigPath.of(...)` accepts literal path segments.
 
-## Codecs
+## Built-In Codecs
 
-The default registry supports strings, booleans, integers, longs, doubles, and primitive equivalents. Register a custom `ConfigCodec<T>` to map application value objects.
+The default registry supports:
+
+| Java type | Notes |
+| --- | --- |
+| `String` | Uses string value or scalar `toString()`. |
+| `Boolean` and `boolean` | Accepts booleans and compatible strings. |
+| `Integer` and `int` | Accepts numbers and parseable strings. |
+| `Long` and `long` | Accepts numbers and parseable strings. |
+| `Double` and `double` | Accepts numbers and parseable strings. |
+
+Register custom codecs for application records and value objects.

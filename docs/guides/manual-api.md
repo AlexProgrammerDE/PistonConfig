@@ -1,12 +1,12 @@
 ---
 layout: default
 title: Manual API
-description: Work directly with configuration documents and nodes.
+description: Work directly with configuration documents, nodes, paths, comments, and decorations.
 ---
 
 # Manual API
 
-Use the manual API when code needs direct control over a configuration tree. It is the lowest-level application API above individual format loaders.
+Use the manual API when code needs direct control over the configuration tree. It is the lowest-level application API above a format loader.
 
 ## Create a Document
 
@@ -17,17 +17,17 @@ var document = ConfigDocument.empty()
   .set("features.whitelist", true);
 ```
 
-`ConfigDocument` always has an object root. Dotted strings are parsed as `ConfigPath` values.
+`ConfigDocument` always has an object root. Setting a dotted path creates missing object nodes along the way.
 
-## Address Paths Safely
+## Work With Paths
 
 ```java
-var simple = ConfigPath.parse("server.port");
+var dotted = ConfigPath.parse("server.port");
 var literalDot = ConfigPath.of("database.url");
 var escapedDot = ConfigPath.parse("database\\.url");
 ```
 
-Use `ConfigPath.of(...)` when a single key contains a dot. Use `ConfigPath.parse(...)` for normal dotted paths.
+Use `ConfigPath.parse(...)` for normal dotted paths. Use `ConfigPath.of(...)` when a key segment contains punctuation that should not be interpreted as a path separator.
 
 ## Read Values
 
@@ -36,12 +36,33 @@ var port = document.find("server.port")
   .flatMap(ConfigNode::asInt)
   .orElse(25565);
 
-var host = document.find("server.host")
-  .flatMap(ConfigNode::asString)
-  .orElse("0.0.0.0");
+var enabled = document.find("server.online-mode")
+  .flatMap(ConfigNode::asBoolean)
+  .orElse(true);
 ```
 
-Scalar accessors convert simple string values where that conversion is safe, such as `"25565"` to an integer or `"true"` to a boolean.
+Scalar accessors convert compatible string values, such as `"25565"` to an integer or `"true"` to a boolean.
+
+## Replace Nodes
+
+```java
+document.setNode(
+  ConfigPath.of("modules"),
+  ConfigNode.list()
+    .addListValue("core")
+    .addListValue("yaml")
+);
+```
+
+`setNode` copies the replacement node. Later mutations on the original replacement object do not mutate the stored document.
+
+## Remove Nodes
+
+```java
+document.root().remove(ConfigPath.parse("legacy.enabled"));
+```
+
+Removing the root resets it to an empty object and returns the previous root as a copy.
 
 ## Add Comments
 
@@ -55,17 +76,18 @@ document.root()
   ));
 ```
 
-Core comments distinguish leading, inline, trailing, blank, block, and marker information. Format modules keep the parts they can express.
+`ConfigComment` separates leading, inline, and trailing comments. `ConfigCommentLine` keeps the logical type and source marker when the backend exposes them.
 
-## Preserve Decorations
+## Add Decorations
 
 ```java
 document.root()
   .getOrCreate(ConfigPath.parse("server"))
-  .decorate(decorations -> decorations.withCollectionStyle(ConfigCollectionStyle.BLOCK));
+  .decorate(decorations -> decorations
+    .withCollectionStyle(ConfigCollectionStyle.BLOCK));
 ```
 
-Decorations are source-level details that are not part of the typed value, such as key comments, scalar style, collection style, and source locations.
+Decorations store source-level details that are not part of the typed value. Examples include key comments, scalar style, collection style, source locations, and string attributes.
 
 ## Load and Save
 
@@ -77,34 +99,13 @@ var document = ConfigLoaders.load(path, loader);
 ConfigLoaders.save(path, loader, document);
 ```
 
-Loaders work with `Reader` and `Writer`. `ConfigLoaders` is the path-oriented convenience API.
+Use `Reader` and `Writer` directly when your application owns storage. Use `ConfigLoaders` for path-based file IO.
 
-## Custom Codecs
+## Convert to Immutable Values
 
 ```java
-record Endpoint(String host, int port) {
-}
-
-var codecs = new ConfigCodecRegistry()
-  .register(Endpoint.class, new ConfigCodec<Endpoint>() {
-    @Override
-    public ConfigNode encode(Endpoint value, ConfigCodecRegistry registry) {
-      return ConfigNode.object()
-        .set(ConfigPath.of("host"), value.host())
-        .set(ConfigPath.of("port"), value.port());
-    }
-
-    @Override
-    public Endpoint decode(ConfigNode node, ConfigCodecRegistry registry) {
-      var host = node.find(ConfigPath.of("host"))
-        .flatMap(ConfigNode::asString)
-        .orElseThrow();
-      var port = node.find(ConfigPath.of("port"))
-        .flatMap(ConfigNode::asInt)
-        .orElseThrow();
-      return new Endpoint(host, port);
-    }
-  });
+ConfigValue value = ConfigValue.fromNode(document.root());
+ConfigNode node = ConfigValue.toNode(value);
 ```
 
-The same registry can be passed to annotation and static-field APIs.
+`ConfigValue` is a sealed immutable value model. It is useful for codecs and adapters that should not expose a mutable `ConfigNode`.

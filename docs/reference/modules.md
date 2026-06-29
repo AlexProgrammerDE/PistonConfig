@@ -1,12 +1,14 @@
 ---
 layout: default
 title: Modules
-description: PistonConfig module reference.
+description: PistonConfig module and capability reference.
 ---
 
 # Modules
 
-Use the BOM to align these artifacts:
+PistonConfig is split into small modules so applications can choose only the config formats and access styles they need.
+
+## Version Alignment
 
 ```kotlin
 dependencies {
@@ -14,38 +16,61 @@ dependencies {
 }
 ```
 
-| Module | Backend | Notes |
-| --- | --- | --- |
-| `pistonconfig-bom` | Gradle Java Platform | Aligns every PistonConfig module version. |
-| `pistonconfig-core` | none | Common tree, comments, decorations, codecs, loaders, and merging. |
-| `pistonconfig-yaml` | SnakeYAML | Maps key comments, value comments, YAML tags, anchors, scalar styles, collection styles, and source locations into core. |
-| `pistonconfig-properties` | Apache Commons Configuration | Preserves layout comments, separators, blank lines, and single-line settings as core decorations. |
-| `pistonconfig-json` | json5-java | Supports JSON, JSONC, and JSON5 with comments and number radix metadata. |
-| `pistonconfig-toml` | Night Config | Uses `CommentedConfig` for comments and TOML parser/writer support. |
-| `pistonconfig-hocon` | Lightbend Config | Uses HOCON parsing, origin comments, and renderable source details. |
-| `pistonconfig-annotations` | core | Maps annotated Java objects to config documents. |
-| `pistonconfig-static-fields` | core | Declares typed static config properties. |
-| `pistonconfig-env` | core | Applies environment and system property overrides. |
-| `pistonconfig-migrations` | core | Applies ordered schema migrations. |
+Use the BOM unless a parent build already manages PistonConfig versions.
 
-## Lossless Metadata
+## Module Catalog
 
-Each `ConfigNode` has:
-
-- `comment()` for leading, inline, and trailing comments.
-- `decorations()` for key comments, scalar style, collection style, key/value locations, and string attributes.
-- `metadata()` for values that are still useful but do not belong in the common decoration model.
-
-Format modules should prefer constants such as `YamlMetadataKeys.TAG` over raw strings.
+| Module | Depends on | Backend | Purpose |
+| --- | --- | --- | --- |
+| `pistonconfig-bom` | none | Gradle Java Platform | Aligns all PistonConfig module versions. |
+| `pistonconfig-core` | none | none | Document tree, comments, decorations, metadata, loaders, codecs, and merging. |
+| `pistonconfig-yaml` | core | SnakeYAML | YAML and `.yml` files with rich comment and style support. |
+| `pistonconfig-properties` | core | Apache Commons Configuration | Java properties with comments, separators, repeated keys, and layout attributes. |
+| `pistonconfig-json` | core | json5-java | JSON, JSONC, and JSON5 with comments and numeric style metadata. |
+| `pistonconfig-toml` | core | Night Config | TOML parser and writer support with commented configs. |
+| `pistonconfig-hocon` | core | Lightbend Config | HOCON parsing, origin comments, and rendered source attributes. |
+| `pistonconfig-annotations` | core | none | Object mapping through field annotations. |
+| `pistonconfig-static-fields` | core | none | Static `ConfigProperty<T>` declarations. |
+| `pistonconfig-env` | core | none | Environment variable and system property overrides. |
+| `pistonconfig-migrations` | core | none | Ordered document migrations with stored schema version. |
 
 ## Format Capabilities
 
-| Format | Extensions | Comments | Nested objects | Lists | Source metadata |
+| Format | Extensions | Comments | Nested objects | Lists | Notable metadata |
 | --- | --- | --- | --- | --- | --- |
-| YAML | `.yaml`, `.yml` | yes | yes | yes | yes |
-| Properties | `.properties` | yes | dotted keys | no native lists | partial |
-| JSON | `.json`, `.jsonc`, `.json5` | yes for JSONC/JSON5 | yes | yes | yes |
-| TOML | `.toml` | yes | yes | yes | yes |
-| HOCON | `.conf`, `.hocon` | yes | yes | yes | yes |
+| YAML | `.yaml`, `.yml` | leading, inline, trailing | yes | yes | tags, anchors, raw scalars, key tags |
+| Properties | `.properties` | leading and root comments | dotted paths | repeated keys | separators, blank lines, single-line layout |
+| JSON | `.json`, `.jsonc`, `.json5` | JSON5 comment model | yes | yes | number radix, timestamp style |
+| TOML | `.toml` | leading comments | yes | yes | table collection style |
+| HOCON | `.conf`, `.hocon` | origin comments | yes | yes | origin description, rendered value |
 
-Properties files are flatter than the other formats. PistonConfig still exposes them through the same tree API by parsing keys as paths.
+## Access Style Modules
+
+<div class="module-grid">
+  <section class="module-card">
+    <h3>Manual API</h3>
+    <p>Use only `pistonconfig-core` when code should edit the tree directly.</p>
+  </section>
+  <section class="module-card">
+    <h3>Annotations</h3>
+    <p>Use `pistonconfig-annotations` when Java fields should define defaults and comments.</p>
+  </section>
+  <section class="module-card">
+    <h3>Static Fields</h3>
+    <p>Use `pistonconfig-static-fields` when keys should be centralized and type-safe.</p>
+  </section>
+  <section class="module-card">
+    <h3>Operations</h3>
+    <p>Use `pistonconfig-env` and `pistonconfig-migrations` for deployment and upgrade workflows.</p>
+  </section>
+</div>
+
+## Recommended Combinations
+
+| Project shape | Modules |
+| --- | --- |
+| Plugin or app with one YAML file | core, yaml, migrations |
+| CLI app with environment overrides | core, toml or yaml, env |
+| Library exposing typed config keys | core, static-fields |
+| Application with object config classes | core, annotations, chosen backend |
+| Config conversion tool | core plus every needed format backend |

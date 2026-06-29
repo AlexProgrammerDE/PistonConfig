@@ -1,12 +1,12 @@
 ---
 layout: default
 title: Getting Started
-description: Load, merge, edit, and save a config document.
+description: Load, merge, override, read, and save a PistonConfig document.
 ---
 
 # Getting Started
 
-This guide shows the normal application workflow: create defaults, load the user's file, merge missing defaults, apply runtime overrides, read typed values, and save the result.
+This guide builds the common application flow: install the core and a backend, create defaults, load a file, merge missing defaults, apply runtime overrides, read typed values, and save the document.
 
 ## Add Dependencies
 
@@ -19,11 +19,11 @@ dependencies {
 }
 ```
 
-Artifacts are published to Maven Central and GitHub Packages on release. GitHub Packages requires authenticated access through `https://maven.pkg.github.com/AlexProgrammerDE/PistonConfig`.
-
-See the [installation guide](installation.html) for Maven, GitHub Packages, and non-BOM examples.
+Use [installation](installation.html) for Maven, GitHub Packages, and non-BOM examples.
 
 ## Create Defaults
+
+Defaults are just normal documents. That keeps manual defaults, annotation-generated defaults, static-field defaults, and resource-loaded defaults compatible with the same merge API.
 
 ```java
 var defaults = ConfigDocument.empty()
@@ -36,9 +36,7 @@ defaults.root()
   .setComment(ConfigComment.lines("Port used by the public listener."));
 ```
 
-Defaults are normal documents. You can build them by hand, generate them from annotations, generate them from static fields, or load them from a bundled resource.
-
-## Load and Merge
+## Load the User File
 
 ```java
 var path = Path.of("config.yml");
@@ -47,20 +45,34 @@ var loader = YamlConfigFormat.INSTANCE.loader();
 var document = Files.exists(path)
   ? ConfigLoaders.load(path, loader)
   : ConfigDocument.empty();
-
-document.mergeDefaults(defaults, MergeOptions.conservative());
-ConfigLoaders.save(path, loader, document);
 ```
 
-`MergeOptions.conservative()` fills missing values but leaves user changes in place.
+`ConfigLoaders` handles UTF-8 readers and writers. Format modules provide the actual `ConfigLoader`.
 
-## Apply Overrides
+## Merge Missing Defaults
+
+```java
+document.mergeDefaults(defaults, MergeOptions.conservative());
+```
+
+`MergeOptions.conservative()` adds missing defaults and refreshes comments from the defaults. It does not replace user values or remove unknown user keys.
+
+Use [merge defaults](merge-defaults.html) when you need exact-default behavior or list strategies.
+
+## Apply Deployment Overrides
 
 ```java
 EnvironmentOverrides.system("myapp").applyTo(document);
 ```
 
-With the `myapp` prefix, `MYAPP_SERVER_PORT=25566` maps to `server.port`, and `-Dmyapp.server.host=127.0.0.1` maps to `server.host`.
+With the `myapp` prefix:
+
+| Source | Example | Config path |
+| --- | --- | --- |
+| Environment | `MYAPP_SERVER_PORT=25566` | `server.port` |
+| System property | `-Dmyapp.server.host=127.0.0.1` | `server.host` |
+
+Apply overrides after merging defaults and migrations so deployment values win.
 
 ## Read Values
 
@@ -68,21 +80,39 @@ With the `myapp` prefix, `MYAPP_SERVER_PORT=25566` maps to `server.port`, and `-
 int port = document.find("server.port")
   .flatMap(ConfigNode::asInt)
   .orElse(25565);
+
+String host = document.find("server.host")
+  .flatMap(ConfigNode::asString)
+  .orElse("0.0.0.0");
 ```
 
-The core accessors return `Optional` because config files are external input. Use defaults at the edge of your application rather than assuming a value is present.
+Accessors return `Optional` because files are external input. Decode near the boundary where you can choose a fallback or report an error.
 
-## Save Back
+## Save the Result
 
 ```java
 ConfigLoaders.save(path, loader, document);
 ```
 
-Saving writes the current document through the selected backend. Comments and source metadata that the backend can represent are read into core and written back where the backend supports it.
+The backend writes the source detail it can represent. For example, YAML can write inline comments, scalar styles, anchors, and collection styles; properties files keep a flatter model and layout attributes.
 
-## Next Steps
+## Next Choices
 
-- Use [manual API](manual-api.html) when code needs direct control over the tree.
-- Use [annotation configs](annotation-configs.html) when a class should describe defaults and comments.
-- Use [static fields](static-field-configs.html) when you want central typed keys.
-- Use [migrations](migrations.html) when config schemas change between releases.
+<div class="link-grid">
+  <a class="link-card" href="format-backends.html">
+    <h3>Pick a backend</h3>
+    <p>Choose the file format whose source model matches your users.</p>
+  </a>
+  <a class="link-card" href="annotation-configs.html">
+    <h3>Use annotations</h3>
+    <p>Generate defaults and comments from Java classes.</p>
+  </a>
+  <a class="link-card" href="static-field-configs.html">
+    <h3>Use static properties</h3>
+    <p>Centralize typed keys and defaults.</p>
+  </a>
+  <a class="link-card" href="migrations.html">
+    <h3>Add migrations</h3>
+    <p>Keep old user files compatible as your schema changes.</p>
+  </a>
+</div>

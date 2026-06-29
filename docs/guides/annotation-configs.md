@@ -6,7 +6,17 @@ description: Map annotated Java objects to PistonConfig documents.
 
 # Annotation Configs
 
-Use `pistonconfig-annotations` when a Java object should define default values, names, prefixes, and comments.
+Use `pistonconfig-annotations` when a Java class should define default values, paths, field names, and comments.
+
+## Add the Module
+
+```kotlin
+dependencies {
+  implementation(platform("net.pistonmaster:pistonconfig-bom:0.1.0-SNAPSHOT"))
+  implementation("net.pistonmaster:pistonconfig-core")
+  implementation("net.pistonmaster:pistonconfig-annotations")
+}
+```
 
 ## Define a Config Class
 
@@ -25,32 +35,49 @@ final class ServerConfig {
 }
 ```
 
-The current mapper works with fields and requires a no-args constructor when reading a new instance.
+The mapper works with fields. Reading into a new instance requires a no-args constructor.
 
-## Write Defaults
+## Generate Defaults
 
 ```java
 var mapper = new AnnotatedConfigMapper();
 var defaults = mapper.writeDefaults(new ServerConfig());
 ```
 
-Comments from `@ConfigComment` are attached to the generated nodes.
+`@ConfigComment` values become node comments. `@ConfigName` changes the final path segment. `@ConfigPathPrefix` prefixes every mapped field.
 
-## Read Values
+## Read a Config Object
 
 ```java
+var document = ConfigLoaders.load(Path.of("config.yml"), YamlConfigFormat.INSTANCE.loader());
 var config = mapper.read(document, ServerConfig.class);
 ```
 
-Only fields present in the document replace values on the target object. Existing Java defaults remain useful fallback values.
+Missing fields keep the Java default values from the newly constructed instance.
 
-## Reuse a Codec Registry
+## Read Into an Existing Object
 
 ```java
-var codecs = new ConfigCodecRegistry()
-  .register(Endpoint.class, endpointCodec);
-
-var mapper = new AnnotatedConfigMapper(codecs);
+var config = new ServerConfig();
+mapper.readInto(document, config);
 ```
 
-Custom codecs let annotation configs use application-specific value types without making the mapper know about those types.
+Use this form when the target object needs constructor setup or values supplied by the application before file values are applied.
+
+## Use Custom Types
+
+```java
+var mapper = new AnnotatedConfigMapper(codecRegistry);
+```
+
+The mapper delegates field encoding and decoding to `ConfigCodecRegistry`. Register a [custom codec](custom-codecs.html) before using application-specific value types.
+
+## Field Selection Rules
+
+| Field kind | Mapped |
+| --- | --- |
+| Instance field | yes |
+| Static field | no |
+| Transient field | no |
+| Field annotated with `@ConfigIgnore` | no |
+| Inherited instance field | yes |
