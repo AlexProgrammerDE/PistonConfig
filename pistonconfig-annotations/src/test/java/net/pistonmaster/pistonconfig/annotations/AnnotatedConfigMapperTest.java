@@ -21,6 +21,7 @@ import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.MergeListStrategy;
 import net.pistonmaster.pistonconfig.yaml.YamlConfigFormat;
+import net.pistonmaster.pistonconfig.yaml.YamlConfigLoader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -170,6 +171,28 @@ final class AnnotatedConfigMapperTest {
 
     assertEquals(25566, config.port());
     assertTrue(Files.readString(path).contains("25565"));
+  }
+
+  @Test
+  void configStoreRewritePreservesExistingSourceComments() throws IOException {
+    var path = tempDir.resolve("server-rewrite.yml");
+    Files.writeString(path, """
+      # Existing port comment
+      port: 25565
+      """);
+    var store = ConfigStores.forType(SimplePortConfig.class)
+      .format(YamlConfigFormat.INSTANCE)
+      .build();
+
+    store.rewrite(path, new SimplePortConfig(25566));
+    var written = Files.readString(path);
+    ConfigDocument document;
+    try (var reader = Files.newBufferedReader(path)) {
+      document = new YamlConfigLoader().load(reader);
+    }
+
+    assertTrue(written.contains("Existing port comment"));
+    assertEquals(25566, document.find("port").flatMap(ConfigNode::asInt).orElseThrow());
   }
 
   @ConfigPathPrefix("server")

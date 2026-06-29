@@ -18,6 +18,7 @@ The core module defines a format-neutral mutable tree with separate layers for v
 | `ConfigComment` | Leading, inline, and trailing comment groups. |
 | `ConfigCommentLine` | One comment line with text, marker, and logical type. |
 | `ConfigNodeDecorations` | Source details shared across formats. |
+| `ConfigReplacementOptions` | Replacement behavior for preserving comments, decorations, and metadata. |
 | `ConfigValue` | Sealed immutable value model for codecs and adapters. |
 | `ConfigCodec<T>` | Encoder and decoder for Java value types used by codec-based APIs. |
 | `ConfigCodecRegistry` | Registry of built-in scalar codecs and custom static-field codecs. |
@@ -83,6 +84,18 @@ ConfigPath.parse("database\\.url");
 ```
 
 `ConfigPath.parse(...)` uses dots as separators and backslash as the escape character. `ConfigPath.of(...)` accepts literal path segments.
+
+## Replacement
+
+`ConfigDocument.set(...)` and `ConfigNode.set(...)` replace values directly. `ConfigReplacementOptions` preserves selected source details from the node already stored at the target path.
+
+| Option | Preserves |
+| --- | --- |
+| `none()` | Nothing from the existing node. |
+| `source()` | Comments and common source decorations. |
+| `sourceAndMetadata()` | Comments, common source decorations, and backend metadata. |
+
+Use `remove(...)` to delete nodes. Setting a value to `null` writes an explicit `NULL` node.
 
 ## Built-In Codecs
 

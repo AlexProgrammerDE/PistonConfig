@@ -162,11 +162,7 @@ public final class ConfigStore<T> {
   private static void overlayTypedValues(ConfigDocument target, ConfigDocument serialized) {
     for (ConfigPath path : leafPaths(serialized.root())) {
       var replacement = serialized.find(path).orElseThrow().copy();
-      target.find(path).ifPresent(existing -> {
-        replacement.setComment(existing.comment());
-        replacement.setDecorations(existing.decorations());
-      });
-      target.setNode(path, replacement);
+      target.setNodePreservingSource(path, replacement);
     }
   }
 

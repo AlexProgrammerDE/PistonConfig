@@ -16,7 +16,7 @@ public final class Migrations {
   /// @param to target dotted path
   public static void rename(ConfigDocument document, String from, String to) {
     var source = ConfigPath.parse(from);
-    document.root().remove(source).ifPresent(node -> document.setNode(ConfigPath.parse(to), node));
+    document.remove(source).ifPresent(node -> document.setNode(ConfigPath.parse(to), node));
   }
 
   /// Sets a value only when the path is currently missing.
@@ -36,7 +36,7 @@ public final class Migrations {
   /// @param document document to mutate
   /// @param path dotted path to remove
   public static void remove(ConfigDocument document, String path) {
-    document.root().remove(ConfigPath.parse(path));
+    document.remove(path);
   }
 
   /// Copies a node from one path to another when the source path exists.

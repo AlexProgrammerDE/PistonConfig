@@ -62,6 +62,17 @@ public final class ConfigDocument {
     return this;
   }
 
+  /// Sets a scalar value at a path with replacement options.
+  ///
+  /// @param path path to write
+  /// @param value scalar value
+  /// @param options replacement behavior
+  /// @return this document
+  public ConfigDocument set(ConfigPath path, Object value, ConfigReplacementOptions options) {
+    root.set(path, value, options);
+    return this;
+  }
+
   /// Sets a scalar value at a dotted path, creating parent objects when needed.
   ///
   /// @param path dotted path to write
@@ -69,6 +80,35 @@ public final class ConfigDocument {
   /// @return this document
   public ConfigDocument set(String path, Object value) {
     return set(ConfigPath.parse(path), value);
+  }
+
+  /// Sets a scalar value at a dotted path with replacement options.
+  ///
+  /// @param path dotted path to write
+  /// @param value scalar value
+  /// @param options replacement behavior
+  /// @return this document
+  public ConfigDocument set(String path, Object value, ConfigReplacementOptions options) {
+    return set(ConfigPath.parse(path), value, options);
+  }
+
+  /// Sets a scalar value while preserving comments and source decorations from the existing node.
+  ///
+  /// @param path path to write
+  /// @param value scalar value
+  /// @return this document
+  public ConfigDocument setPreservingSource(ConfigPath path, Object value) {
+    root.setPreservingSource(path, value);
+    return this;
+  }
+
+  /// Sets a scalar value at a dotted path while preserving comments and source decorations from the existing node.
+  ///
+  /// @param path dotted path to write
+  /// @param value scalar value
+  /// @return this document
+  public ConfigDocument setPreservingSource(String path, Object value) {
+    return setPreservingSource(ConfigPath.parse(path), value);
   }
 
   /// Sets a node at a path, copying the supplied node into the document.
@@ -79,6 +119,47 @@ public final class ConfigDocument {
   public ConfigDocument setNode(ConfigPath path, ConfigNode node) {
     root.setNode(path, node);
     return this;
+  }
+
+  /// Sets a node at a path with replacement options.
+  ///
+  /// @param path path to write
+  /// @param node node to copy into the document
+  /// @param options replacement behavior
+  /// @return this document
+  public ConfigDocument setNode(ConfigPath path, ConfigNode node, ConfigReplacementOptions options) {
+    root.setNode(path, node, options);
+    return this;
+  }
+
+  /// Sets a node while preserving comments and source decorations from the existing node.
+  ///
+  /// @param path path to write
+  /// @param node node to copy into the document
+  /// @return this document
+  public ConfigDocument setNodePreservingSource(ConfigPath path, ConfigNode node) {
+    root.setNodePreservingSource(path, node);
+    return this;
+  }
+
+  /// Removes a node by path.
+  ///
+  /// Removing the root resets this document to an empty object and returns the previous root.
+  ///
+  /// @param path path to remove
+  /// @return removed node when one existed
+  public Optional<ConfigNode> remove(ConfigPath path) {
+    return root.remove(path);
+  }
+
+  /// Removes a node by dotted path.
+  ///
+  /// Removing the root resets this document to an empty object and returns the previous root.
+  ///
+  /// @param path dotted path to remove
+  /// @return removed node when one existed
+  public Optional<ConfigNode> remove(String path) {
+    return remove(ConfigPath.parse(path));
   }
 
   /// Merges a default document into this document.

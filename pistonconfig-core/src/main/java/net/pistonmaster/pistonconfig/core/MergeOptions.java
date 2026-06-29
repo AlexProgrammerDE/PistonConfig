@@ -6,15 +6,21 @@ import org.immutables.value.Value;
 @PistonStyle
 @Value.Immutable
 public interface MergeOptions {
-  /// Returns whether comments from defaults replace current comments.
+  /// Returns how comments and presentation-oriented decorations are merged.
   ///
-  /// @return `true` when default comments should be copied to the target
-  boolean updateComments();
+  /// @return comment merge strategy
+  @Value.Default
+  default MergeCommentStrategy commentStrategy() {
+    return MergeCommentStrategy.FILL_MISSING;
+  }
 
   /// Returns whether object keys missing from defaults are removed.
   ///
   /// @return `true` when unknown target keys should be removed
-  boolean removeUnknown();
+  @Value.Default
+  default boolean removeUnknown() {
+    return false;
+  }
 
   /// Returns the strategy used when both nodes are lists.
   ///
@@ -24,21 +30,26 @@ public interface MergeOptions {
     return MergeListStrategy.PRESERVE_EXISTING;
   }
 
-  /// Creates an Immutables staged builder for merge options.
+  /// Returns when existing values are replaced by defaults.
+  ///
+  /// @return value merge strategy
+  @Value.Default
+  default MergeValueStrategy valueStrategy() {
+    return MergeValueStrategy.REPLACE_INVALID;
+  }
+
+  /// Creates an Immutables builder for merge options.
   ///
   /// @return merge options builder
-  static ImmutableMergeOptions.UpdateCommentsBuildStage builder() {
+  static ImmutableMergeOptions.Builder builder() {
     return ImmutableMergeOptions.builder();
   }
 
-  /// Returns options that add missing defaults and refresh comments.
+  /// Returns options that add missing defaults, fill missing comments, and repair invalid shapes.
   ///
   /// @return conservative merge options
   static MergeOptions conservative() {
-    return builder()
-      .updateComments(true)
-      .removeUnknown(false)
-      .build();
+    return builder().build();
   }
 
   /// Returns options that make the target match the default schema closely.
@@ -46,9 +57,10 @@ public interface MergeOptions {
   /// @return exact-default merge options
   static MergeOptions exactDefaults() {
     return builder()
-      .updateComments(true)
+      .commentStrategy(MergeCommentStrategy.REPLACE)
       .removeUnknown(true)
       .listStrategy(MergeListStrategy.REPLACE)
+      .valueStrategy(MergeValueStrategy.REPLACE_EXISTING)
       .build();
   }
 }

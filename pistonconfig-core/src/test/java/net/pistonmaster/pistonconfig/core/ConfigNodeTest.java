@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -38,11 +39,7 @@ final class ConfigNodeTest {
   void setNodeCopiesReplacement() {
     var replacement = ConfigNode.scalar("initial")
       .setComment(ConfigComment.builder()
-        .addLeading(ConfigCommentLine.builder()
-          .text("comment")
-          .type(ConfigCommentType.BLOCK)
-          .marker(ConfigCommentMarker.HASH)
-          .build())
+        .addLeading(commentLine("comment"))
         .build());
     var object = ConfigNode.object().setNode(ConfigPath.of("value"), replacement);
 
@@ -51,6 +48,42 @@ final class ConfigNodeTest {
     var stored = object.find(ConfigPath.of("value")).orElseThrow();
     assertEquals("initial", stored.asString().orElseThrow());
     assertEquals("comment", stored.comment().leadingText().getFirst());
+  }
+
+  @Test
+  void replacementOptionsCanPreserveExistingSourceAndMetadata() {
+    var root = ConfigNode.object()
+      .setNode(ConfigPath.of("value"), ConfigNode.scalar("old")
+        .setComment(ConfigComment.builder()
+          .addLeading(commentLine("existing comment"))
+          .build())
+        .setDecorations(ConfigNodeDecorations.builder()
+          .putAttribute("style", "existing")
+          .build())
+        .setMetadata("raw", "old"));
+
+    root.setNode(ConfigPath.of("value"), ConfigNode.scalar("new")
+      .setMetadata("raw", "new"), ConfigReplacementOptions.sourceAndMetadata());
+
+    var value = root.find(ConfigPath.of("value")).orElseThrow();
+    assertEquals("new", value.asString().orElseThrow());
+    assertEquals(List.of("existing comment"), value.comment().leadingText());
+    assertEquals("existing", value.decorations().attributes().get("style"));
+    assertEquals("old", value.metadata("raw").orElseThrow());
+  }
+
+  @Test
+  void preservingSourceDoesNotPreserveBackendMetadataByDefault() {
+    var root = ConfigNode.object()
+      .setNode(ConfigPath.of("value"), ConfigNode.scalar("old")
+        .setMetadata("raw", "old"));
+
+    root.setNodePreservingSource(ConfigPath.of("value"), ConfigNode.scalar("new")
+      .setMetadata("raw", "new"));
+
+    var value = root.find(ConfigPath.of("value")).orElseThrow();
+    assertEquals("new", value.asString().orElseThrow());
+    assertEquals("new", value.metadata("raw").orElseThrow());
   }
 
   @Test
@@ -109,5 +142,13 @@ final class ConfigNodeTest {
     assertTrue(node.asString().isEmpty());
     assertEquals(ConfigValueKind.NULL, node.kind());
     assertInstanceOf(Map.class, node.metadata());
+  }
+
+  private static ConfigCommentLine commentLine(String text) {
+    return ConfigCommentLine.builder()
+      .text(text)
+      .type(ConfigCommentType.BLOCK)
+      .marker(ConfigCommentMarker.HASH)
+      .build();
   }
 }

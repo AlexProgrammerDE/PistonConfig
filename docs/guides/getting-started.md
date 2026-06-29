@@ -61,7 +61,7 @@ var document = Files.exists(path)
 document.mergeDefaults(defaults, MergeOptions.conservative());
 ```
 
-`MergeOptions.conservative()` adds missing defaults and refreshes comments from the defaults. It does not replace user values or remove unknown user keys.
+`MergeOptions.conservative()` adds missing defaults, fills missing comments, and repairs values whose node kind no longer matches the defaults. It does not replace compatible user values or remove unknown user keys.
 
 Use [merge defaults](merge-defaults.html) when you need exact-default behavior or list strategies.
 

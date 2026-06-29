@@ -56,10 +56,22 @@ document.setNode(
 
 `setNode` copies the replacement node. Later mutations on the original replacement object do not mutate the stored document.
 
+Use replacement options when a value should change but the existing source details should stay:
+
+```java
+document.setNode(
+  ConfigPath.parse("server.port"),
+  ConfigNode.scalar(25566),
+  ConfigReplacementOptions.source()
+);
+```
+
+`ConfigReplacementOptions.source()` preserves comments and common source decorations from the existing node. Use `ConfigReplacementOptions.sourceAndMetadata()` only when backend metadata is still valid for the replacement value.
+
 ## Remove Nodes
 
 ```java
-document.root().remove(ConfigPath.parse("legacy.enabled"));
+document.remove("legacy.enabled");
 ```
 
 Removing the root resets it to an empty object and returns the previous root as a copy.

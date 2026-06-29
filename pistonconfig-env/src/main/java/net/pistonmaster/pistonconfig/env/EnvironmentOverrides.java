@@ -122,9 +122,7 @@ public interface EnvironmentOverrides {
     }
 
     var replacement = coerce(existing.get(), rawValue);
-    replacement.setComment(existing.get().comment());
-    replacement.setDecorations(existing.get().decorations());
-    document.setNode(ConfigPath.parse(path), replacement);
+    document.setNodePreservingSource(ConfigPath.parse(path), replacement);
   }
 
   private static ConfigNode coerce(ConfigNode existing, String rawValue) {

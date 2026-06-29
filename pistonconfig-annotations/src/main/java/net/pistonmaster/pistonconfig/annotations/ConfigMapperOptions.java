@@ -3,17 +3,20 @@ package net.pistonmaster.pistonconfig.annotations;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import net.pistonmaster.pistonconfig.core.MergeCommentStrategy;
 import net.pistonmaster.pistonconfig.core.MergeListStrategy;
 import net.pistonmaster.pistonconfig.core.MergeOptions;
+import net.pistonmaster.pistonconfig.core.MergeValueStrategy;
 
 /// Options used by annotation-based typed config mapping.
 public final class ConfigMapperOptions {
   private final ConfigNameFormatter nameFormatter;
   private final boolean inputNulls;
   private final boolean outputNulls;
-  private final boolean updateComments;
+  private final MergeCommentStrategy commentStrategy;
   private final ConfigUnknownKeyPolicy unknownKeyPolicy;
   private final MergeListStrategy listStrategy;
+  private final MergeValueStrategy valueStrategy;
   private final ConfigScalarCoercion scalarCoercion;
   private final Map<Class<?>, ConfigSerializer<?>> serializers;
   private final Map<Class<?>, ConfigSerializerFactory<?>> serializerFactories;
@@ -22,9 +25,10 @@ public final class ConfigMapperOptions {
     nameFormatter = Objects.requireNonNull(builder.nameFormatter, "nameFormatter");
     inputNulls = builder.inputNulls;
     outputNulls = builder.outputNulls;
-    updateComments = builder.updateComments;
+    commentStrategy = Objects.requireNonNull(builder.commentStrategy, "commentStrategy");
     unknownKeyPolicy = Objects.requireNonNull(builder.unknownKeyPolicy, "unknownKeyPolicy");
     listStrategy = Objects.requireNonNull(builder.listStrategy, "listStrategy");
+    valueStrategy = Objects.requireNonNull(builder.valueStrategy, "valueStrategy");
     scalarCoercion = Objects.requireNonNull(builder.scalarCoercion, "scalarCoercion");
     serializers = Map.copyOf(builder.serializers);
     serializerFactories = Map.copyOf(builder.serializerFactories);
@@ -65,11 +69,11 @@ public final class ConfigMapperOptions {
     return outputNulls;
   }
 
-  /// Returns whether generated comments refresh existing document comments during update.
+  /// Returns how generated comments merge with existing document comments during update.
   ///
-  /// @return comment update policy
-  public boolean updateComments() {
-    return updateComments;
+  /// @return comment merge strategy
+  public MergeCommentStrategy commentStrategy() {
+    return commentStrategy;
   }
 
   /// Returns how unknown keys are handled during typed update.
@@ -86,6 +90,13 @@ public final class ConfigMapperOptions {
     return listStrategy;
   }
 
+  /// Returns how existing values are merged with generated defaults.
+  ///
+  /// @return value merge strategy
+  public MergeValueStrategy valueStrategy() {
+    return valueStrategy;
+  }
+
   /// Returns scalar coercion behavior.
   ///
   /// @return scalar coercion behavior
@@ -98,9 +109,10 @@ public final class ConfigMapperOptions {
   /// @return merge options
   public MergeOptions mergeOptions() {
     return MergeOptions.builder()
-      .updateComments(updateComments)
+      .commentStrategy(commentStrategy)
       .removeUnknown(unknownKeyPolicy == ConfigUnknownKeyPolicy.DROP)
       .listStrategy(listStrategy)
+      .valueStrategy(valueStrategy)
       .build();
   }
 
@@ -117,9 +129,10 @@ public final class ConfigMapperOptions {
     private ConfigNameFormatter nameFormatter = ConfigNameFormatters.IDENTITY;
     private boolean inputNulls;
     private boolean outputNulls;
-    private boolean updateComments = true;
+    private MergeCommentStrategy commentStrategy = MergeCommentStrategy.FILL_MISSING;
     private ConfigUnknownKeyPolicy unknownKeyPolicy = ConfigUnknownKeyPolicy.PRESERVE;
     private MergeListStrategy listStrategy = MergeListStrategy.PRESERVE_EXISTING;
+    private MergeValueStrategy valueStrategy = MergeValueStrategy.REPLACE_INVALID;
     private ConfigScalarCoercion scalarCoercion = ConfigScalarCoercion.STRICT;
     private final Map<Class<?>, ConfigSerializer<?>> serializers = new LinkedHashMap<>();
     private final Map<Class<?>, ConfigSerializerFactory<?>> serializerFactories = new LinkedHashMap<>();
@@ -154,12 +167,12 @@ public final class ConfigMapperOptions {
       return this;
     }
 
-    /// Sets whether generated comments refresh existing document comments during update.
+    /// Sets how generated comments merge with existing document comments during update.
     ///
-    /// @param updateComments comment update policy
+    /// @param commentStrategy comment merge strategy
     /// @return this builder
-    public Builder updateComments(boolean updateComments) {
-      this.updateComments = updateComments;
+    public Builder commentStrategy(MergeCommentStrategy commentStrategy) {
+      this.commentStrategy = Objects.requireNonNull(commentStrategy, "commentStrategy");
       return this;
     }
 
@@ -178,6 +191,15 @@ public final class ConfigMapperOptions {
     /// @return this builder
     public Builder listStrategy(MergeListStrategy listStrategy) {
       this.listStrategy = Objects.requireNonNull(listStrategy, "listStrategy");
+      return this;
+    }
+
+    /// Sets how existing values are merged with generated defaults.
+    ///
+    /// @param valueStrategy value merge strategy
+    /// @return this builder
+    public Builder valueStrategy(MergeValueStrategy valueStrategy) {
+      this.valueStrategy = Objects.requireNonNull(valueStrategy, "valueStrategy");
       return this;
     }
 

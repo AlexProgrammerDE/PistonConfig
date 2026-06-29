@@ -46,6 +46,10 @@ public final class ConfigNode {
   /// @param value scalar value
   /// @return scalar node
   public static ConfigNode scalar(Object value) {
+    if (value == null) {
+      return nullValue();
+    }
+
     var node = new ConfigNode(ConfigValueKind.SCALAR);
     node.value = normalizeScalar(value);
     return node;
@@ -343,6 +347,25 @@ public final class ConfigNode {
     return setNode(path, ConfigNode.scalar(value));
   }
 
+  /// Sets a scalar value at a descendant path with replacement options.
+  ///
+  /// @param path descendant path
+  /// @param value scalar value
+  /// @param options replacement behavior
+  /// @return this node
+  public ConfigNode set(ConfigPath path, Object value, ConfigReplacementOptions options) {
+    return setNode(path, ConfigNode.scalar(value), options);
+  }
+
+  /// Sets a scalar value while preserving comments and source decorations from the existing node.
+  ///
+  /// @param path descendant path
+  /// @param value scalar value
+  /// @return this node
+  public ConfigNode setPreservingSource(ConfigPath path, Object value) {
+    return set(path, value, ConfigReplacementOptions.source());
+  }
+
   /// Sets a node at a descendant path.
   ///
   /// The replacement is copied before insertion.
@@ -351,9 +374,38 @@ public final class ConfigNode {
   /// @param replacement replacement node
   /// @return this node
   public ConfigNode setNode(ConfigPath path, ConfigNode replacement) {
+    return setNode(path, replacement, ConfigReplacementOptions.none());
+  }
+
+  /// Sets a node at a descendant path with replacement options.
+  ///
+  /// The replacement is copied before insertion. When preservation is enabled,
+  /// selected source metadata is copied from the node currently stored at the path.
+  ///
+  /// @param path descendant path
+  /// @param replacement replacement node
+  /// @param options replacement behavior
+  /// @return this node
+  public ConfigNode setNode(ConfigPath path, ConfigNode replacement, ConfigReplacementOptions options) {
     Objects.requireNonNull(path, "path");
     Objects.requireNonNull(replacement, "replacement");
+    Objects.requireNonNull(options, "options");
 
+    var preparedReplacement = replacement.copy();
+    find(path).ifPresent(existing -> preserveExistingSource(preparedReplacement, existing, options));
+    return putPreparedNode(path, preparedReplacement);
+  }
+
+  /// Sets a node while preserving comments and source decorations from the existing node.
+  ///
+  /// @param path descendant path
+  /// @param replacement replacement node
+  /// @return this node
+  public ConfigNode setNodePreservingSource(ConfigPath path, ConfigNode replacement) {
+    return setNode(path, replacement, ConfigReplacementOptions.source());
+  }
+
+  private ConfigNode putPreparedNode(ConfigPath path, ConfigNode replacement) {
     if (path.isRoot()) {
       copyFrom(replacement);
       return this;
@@ -361,8 +413,25 @@ public final class ConfigNode {
 
     var parent = getOrCreate(path.parent().orElse(ConfigPath.root()));
     parent.ensureObject();
-    parent.objectChildren.put(path.lastSegment(), replacement.copy());
+    parent.objectChildren.put(path.lastSegment(), replacement);
     return this;
+  }
+
+  private static void preserveExistingSource(
+    ConfigNode replacement,
+    ConfigNode existing,
+    ConfigReplacementOptions options
+  ) {
+    if (options.preserveComments()) {
+      replacement.comment = existing.comment;
+    }
+    if (options.preserveDecorations()) {
+      replacement.decorations = existing.decorations;
+    }
+    if (options.preserveMetadata()) {
+      replacement.metadata.clear();
+      replacement.metadata.putAll(existing.metadata);
+    }
   }
 
   /// Removes a descendant node.

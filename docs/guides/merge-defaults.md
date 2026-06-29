@@ -32,15 +32,16 @@ The user value stays in place. The missing default is added.
 
 ## Merge Options
 
-`MergeOptions` uses an Immutables staged builder, so custom behavior is named at the call site instead of hidden behind positional booleans.
+`MergeOptions` uses an Immutables builder, so custom behavior is named at the call site instead of hidden behind positional booleans.
 
 | Field | Purpose |
 | --- | --- |
-| `updateComments` | Refresh comments from the defaults without touching user values. |
+| `commentStrategy` | How comments and presentation decorations from defaults merge into existing nodes. |
 | `removeUnknown` | Remove object keys that the defaults do not declare. |
 | `listStrategy` | How to merge when both the user value and the default are lists. |
+| `valueStrategy` | When an existing value should be replaced by the default value. |
 
-The presets cover the common cases. `MergeOptions.conservative()` refreshes comments, keeps unknown keys, and preserves existing lists. `MergeOptions.exactDefaults()` refreshes comments, removes unknown keys, and replaces lists.
+The presets cover the common cases. `MergeOptions.conservative()` fills missing comments, repairs invalid node shapes, keeps unknown keys, and preserves existing lists. `MergeOptions.exactDefaults()` replaces comments, removes unknown keys, replaces lists, and replaces existing values declared by the defaults.
 
 ## Exact Defaults
 
@@ -54,7 +55,6 @@ Exact defaults are useful for generated files where unknown keys should be remov
 
 ```java
 var options = MergeOptions.builder()
-  .updateComments(true)
   .removeUnknown(false)
   .listStrategy(MergeListStrategy.APPEND_MISSING)
   .build();
@@ -66,19 +66,39 @@ var options = MergeOptions.builder()
 | `REPLACE` | Replace the user's list with the default list. |
 | `APPEND_MISSING` | Append default items by index when the user's list is shorter. |
 
-## Comment Refresh
-
-When `updateComments` is true, defaults can refresh comments without replacing user values.
+## Value Strategies
 
 ```java
 var options = MergeOptions.builder()
-  .updateComments(true)
-  .removeUnknown(false)
-  .listStrategy(MergeListStrategy.PRESERVE_EXISTING)
+  .valueStrategy(MergeValueStrategy.REPLACE_INVALID)
   .build();
 ```
 
-This is useful when your shipped defaults improve wording or add comments for new versions.
+| Strategy | Behavior |
+| --- | --- |
+| `PRESERVE_EXISTING` | Keep existing values, even when their node kind differs from the default. |
+| `REPLACE_INVALID` | Replace existing values only when their node kind differs from the default. |
+| `REPLACE_EXISTING` | Replace values declared by the defaults. |
+
+`REPLACE_INVALID` is useful for user-authored files because it fixes old scalar/object/list shape mistakes without replacing compatible values.
+
+## Comment Strategies
+
+Comment strategies apply to node comments and presentation-oriented decorations such as key comments, scalar style, collection style, and backend attributes. Source locations are kept on existing nodes.
+
+```java
+var options = MergeOptions.builder()
+  .commentStrategy(MergeCommentStrategy.FILL_MISSING)
+  .build();
+```
+
+| Strategy | Behavior |
+| --- | --- |
+| `KEEP_EXISTING` | Keep existing comments and presentation decorations. |
+| `FILL_MISSING` | Copy default comments and presentation decorations only where the target has none. |
+| `REPLACE` | Replace existing comments and presentation decorations with the defaults. |
+
+`FILL_MISSING` is the default for conservative merging. It lets new comments appear without overwriting comments users already edited.
 
 ## Recommended Order
 

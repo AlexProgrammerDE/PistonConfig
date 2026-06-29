@@ -123,7 +123,7 @@ public final class StaticConfigStore {
     var current = ConfigLoaders.load(path, loader);
     for (ConfigProperty<?> property : definition.properties()) {
       serialized.find(property.path())
-        .ifPresent(node -> current.setNode(property.path(), node));
+        .ifPresent(node -> current.setNodePreservingSource(property.path(), node));
     }
     ConfigLoaders.save(path, loader, current);
   }

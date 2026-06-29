@@ -65,7 +65,7 @@ var store = StaticConfigStore.builder()
 var session = store.update(Path.of("config.yml"));
 ```
 
-`update` creates the file when it is missing, runs configured document migrations, merges defaults, refreshes generated comments, rewrites invalid declared values when configured, saves the document, and returns a stateful session.
+`update` creates the file when it is missing, runs configured document migrations, merges defaults, fills missing generated comments, repairs invalid node shapes, rewrites invalid declared values when configured, saves the document, and returns a stateful session.
 
 ## Read and Write Values
 

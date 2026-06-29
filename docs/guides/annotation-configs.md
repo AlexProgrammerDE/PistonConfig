@@ -64,7 +64,7 @@ var store = ConfigStores.forType(ServerConfig.class)
 var config = store.update(Path.of("config.yml"));
 ```
 
-`update` creates the file when it is missing, merges missing defaults when it exists, refreshes generated comments, saves the document, and returns the typed config object.
+`update` creates the file when it is missing, merges missing defaults when it exists, fills missing generated comments, repairs invalid node shapes, saves the document, and returns the typed config object.
 
 ## Use the Mapper Directly
 
@@ -89,7 +89,7 @@ var options = ConfigMapperOptions.builder()
 var mapper = new AnnotatedConfigMapper(options);
 ```
 
-Options control name formatting, explicit null handling, stale key behavior during store updates, list merge behavior, scalar coercion, and custom serializers.
+Options control name formatting, explicit null handling, stale key behavior during store updates, comment merge behavior, list merge behavior, value merge behavior, scalar coercion, and custom serializers.
 
 ## Supported Shapes
 

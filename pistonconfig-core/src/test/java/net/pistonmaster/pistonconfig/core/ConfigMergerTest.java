@@ -1,10 +1,12 @@
 package net.pistonmaster.pistonconfig.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 final class ConfigMergerTest {
@@ -33,10 +35,11 @@ final class ConfigMergerTest {
     current.mergeDefaults(defaults, MergeOptions.exactDefaults());
 
     assertTrue(current.find("legacy.enabled").isEmpty());
+    assertEquals(25565, current.find("server.port").flatMap(ConfigNode::asInt).orElseThrow());
   }
 
   @Test
-  void updatesCommentsWithoutReplacingScalarValues() {
+  void conservativeMergeFillsMissingCommentsWithoutReplacingScalarValues() {
     var current = ConfigDocument.empty()
       .set("server.port", 25566);
     var defaults = ConfigDocument.empty()
@@ -59,6 +62,117 @@ final class ConfigMergerTest {
   }
 
   @Test
+  void conservativeMergeRepairsInvalidNodeShapes() {
+    var current = ConfigDocument.empty()
+      .set("server", "invalid");
+    var defaults = ConfigDocument.empty()
+      .set("server.port", 25565);
+
+    current.mergeDefaults(defaults, MergeOptions.conservative());
+
+    assertEquals(25565, current.find("server.port").flatMap(ConfigNode::asInt).orElseThrow());
+  }
+
+  @Test
+  void valueStrategyCanPreserveInvalidNodeShapes() {
+    var current = ConfigDocument.empty()
+      .set("server", "invalid");
+    var defaults = ConfigDocument.empty()
+      .set("server.port", 25565);
+
+    current.mergeDefaults(defaults, MergeOptions.builder()
+      .valueStrategy(MergeValueStrategy.PRESERVE_EXISTING)
+      .build());
+
+    assertEquals("invalid", current.find("server").flatMap(ConfigNode::asString).orElseThrow());
+    assertTrue(current.find("server.port").isEmpty());
+  }
+
+  @Test
+  void commentStrategyCanKeepFillOrReplaceComments() {
+    var defaults = ConfigDocument.empty()
+      .setNode(ConfigPath.of("port"), ConfigNode.scalar(25565)
+        .setComment(ConfigComment.builder()
+          .addLeading(commentLine("Default port."))
+          .addInline(commentLine("default inline", ConfigCommentType.INLINE))
+          .build()));
+
+    var kept = ConfigDocument.empty()
+      .setNode(ConfigPath.of("port"), ConfigNode.scalar(25566)
+        .setComment(ConfigComment.builder()
+          .addLeading(commentLine("User port."))
+          .build()));
+    kept.mergeDefaults(defaults, MergeOptions.builder()
+      .commentStrategy(MergeCommentStrategy.KEEP_EXISTING)
+      .valueStrategy(MergeValueStrategy.PRESERVE_EXISTING)
+      .build());
+
+    var filled = ConfigDocument.empty()
+      .setNode(ConfigPath.of("port"), ConfigNode.scalar(25566)
+        .setComment(ConfigComment.builder()
+          .addLeading(commentLine("User port."))
+          .build()));
+    filled.mergeDefaults(defaults, MergeOptions.builder()
+      .commentStrategy(MergeCommentStrategy.FILL_MISSING)
+      .valueStrategy(MergeValueStrategy.PRESERVE_EXISTING)
+      .build());
+
+    var replaced = ConfigDocument.empty()
+      .setNode(ConfigPath.of("port"), ConfigNode.scalar(25566)
+        .setComment(ConfigComment.builder()
+          .addLeading(commentLine("User port."))
+          .build()));
+    replaced.mergeDefaults(defaults, MergeOptions.builder()
+      .commentStrategy(MergeCommentStrategy.REPLACE)
+      .valueStrategy(MergeValueStrategy.PRESERVE_EXISTING)
+      .build());
+
+    assertEquals(List.of("User port."), kept.find("port").orElseThrow().comment().leadingText());
+    assertEquals("", kept.find("port").orElseThrow().comment().inlineText());
+    assertEquals(List.of("User port."), filled.find("port").orElseThrow().comment().leadingText());
+    assertEquals("default inline", filled.find("port").orElseThrow().comment().inlineText());
+    assertEquals(List.of("Default port."), replaced.find("port").orElseThrow().comment().leadingText());
+    assertEquals("default inline", replaced.find("port").orElseThrow().comment().inlineText());
+  }
+
+  @Test
+  void commentStrategyMergesPresentationDecorationsWithoutReplacingLocations() {
+    var defaults = ConfigDocument.empty()
+      .setNode(ConfigPath.of("name"), ConfigNode.scalar("default")
+        .decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+          .withKeyComment(ConfigComment.builder()
+            .addLeading(commentLine("Default key."))
+            .build())
+          .withScalarStyle(ConfigScalarStyle.SINGLE_QUOTED)
+          .withAttributes(Map.of("default", "yes"))
+          .withValueLocation(ConfigSourceLocation.builder()
+            .description("defaults.yml")
+            .line(10)
+            .column(3)
+            .build())));
+
+    var current = ConfigDocument.empty()
+      .setNode(ConfigPath.of("name"), ConfigNode.scalar("current")
+        .decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+          .withValueLocation(ConfigSourceLocation.builder()
+            .description("current.yml")
+            .line(2)
+            .column(1)
+            .build())));
+
+    current.mergeDefaults(defaults, MergeOptions.builder()
+      .commentStrategy(MergeCommentStrategy.FILL_MISSING)
+      .valueStrategy(MergeValueStrategy.PRESERVE_EXISTING)
+      .build());
+
+    var decorations = current.find("name").orElseThrow().decorations();
+    assertEquals(List.of("Default key."), decorations.keyComment().leadingText());
+    assertEquals(ConfigScalarStyle.SINGLE_QUOTED, decorations.scalarStyle());
+    assertEquals("yes", decorations.attributes().get("default"));
+    assertEquals("current.yml", decorations.valueLocation().description());
+  }
+
+  @Test
   void canPreserveReplaceOrAppendListValues() {
     var defaults = ConfigDocument.empty()
       .setNode(ConfigPath.of("modules"), ConfigNode.list()
@@ -69,25 +183,25 @@ final class ConfigMergerTest {
     var preserved = ConfigDocument.empty()
       .setNode(ConfigPath.of("modules"), ConfigNode.list().addListValue("custom"));
     preserved.mergeDefaults(defaults, MergeOptions.builder()
-      .updateComments(false)
-      .removeUnknown(false)
+      .commentStrategy(MergeCommentStrategy.KEEP_EXISTING)
       .listStrategy(MergeListStrategy.PRESERVE_EXISTING)
+      .valueStrategy(MergeValueStrategy.PRESERVE_EXISTING)
       .build());
 
     var replaced = ConfigDocument.empty()
       .setNode(ConfigPath.of("modules"), ConfigNode.list().addListValue("custom"));
     replaced.mergeDefaults(defaults, MergeOptions.builder()
-      .updateComments(false)
-      .removeUnknown(false)
+      .commentStrategy(MergeCommentStrategy.KEEP_EXISTING)
       .listStrategy(MergeListStrategy.REPLACE)
+      .valueStrategy(MergeValueStrategy.PRESERVE_EXISTING)
       .build());
 
     var appended = ConfigDocument.empty()
       .setNode(ConfigPath.of("modules"), ConfigNode.list().addListValue("custom"));
     appended.mergeDefaults(defaults, MergeOptions.builder()
-      .updateComments(false)
-      .removeUnknown(false)
+      .commentStrategy(MergeCommentStrategy.KEEP_EXISTING)
       .listStrategy(MergeListStrategy.APPEND_MISSING)
+      .valueStrategy(MergeValueStrategy.PRESERVE_EXISTING)
       .build());
 
     assertIterableEquals(List.of("custom"), scalarList(preserved));
@@ -96,13 +210,13 @@ final class ConfigMergerTest {
   }
 
   @Test
-  void builderDefaultsListStrategyToPreserveExisting() {
-    var options = MergeOptions.builder()
-      .updateComments(false)
-      .removeUnknown(false)
-      .build();
+  void builderDefaultsAreConservative() {
+    var options = MergeOptions.builder().build();
 
+    assertEquals(MergeCommentStrategy.FILL_MISSING, options.commentStrategy());
+    assertFalse(options.removeUnknown());
     assertEquals(MergeListStrategy.PRESERVE_EXISTING, options.listStrategy());
+    assertEquals(MergeValueStrategy.REPLACE_INVALID, options.valueStrategy());
   }
 
   private static List<String> scalarList(ConfigDocument document) {
@@ -112,5 +226,17 @@ final class ConfigMergerTest {
       .stream()
       .map(node -> node.asString().orElseThrow())
       .toList();
+  }
+
+  private static ConfigCommentLine commentLine(String text) {
+    return commentLine(text, ConfigCommentType.BLOCK);
+  }
+
+  private static ConfigCommentLine commentLine(String text, ConfigCommentType type) {
+    return ConfigCommentLine.builder()
+      .text(text)
+      .type(type)
+      .marker(ConfigCommentMarker.HASH)
+      .build();
   }
 }

@@ -1,20 +1,24 @@
 package net.pistonmaster.pistonconfig.staticfields;
 
 import java.util.Objects;
+import net.pistonmaster.pistonconfig.core.MergeCommentStrategy;
 import net.pistonmaster.pistonconfig.core.MergeListStrategy;
 import net.pistonmaster.pistonconfig.core.MergeOptions;
+import net.pistonmaster.pistonconfig.core.MergeValueStrategy;
 
 /// Options used by static config stores.
 public final class StaticConfigStoreOptions {
-  private final boolean updateComments;
+  private final MergeCommentStrategy commentStrategy;
   private final StaticUnknownKeyPolicy unknownKeyPolicy;
   private final MergeListStrategy listStrategy;
+  private final MergeValueStrategy valueStrategy;
   private final StaticInvalidValuePolicy invalidValuePolicy;
 
   private StaticConfigStoreOptions(Builder builder) {
-    updateComments = builder.updateComments;
+    commentStrategy = Objects.requireNonNull(builder.commentStrategy, "commentStrategy");
     unknownKeyPolicy = Objects.requireNonNull(builder.unknownKeyPolicy, "unknownKeyPolicy");
     listStrategy = Objects.requireNonNull(builder.listStrategy, "listStrategy");
+    valueStrategy = Objects.requireNonNull(builder.valueStrategy, "valueStrategy");
     invalidValuePolicy = Objects.requireNonNull(builder.invalidValuePolicy, "invalidValuePolicy");
   }
 
@@ -32,11 +36,11 @@ public final class StaticConfigStoreOptions {
     return new Builder();
   }
 
-  /// Returns whether generated comments refresh existing comments during update.
+  /// Returns how generated comments merge with existing comments during update.
   ///
-  /// @return comment update policy
-  public boolean updateComments() {
-    return updateComments;
+  /// @return comment merge strategy
+  public MergeCommentStrategy commentStrategy() {
+    return commentStrategy;
   }
 
   /// Returns unknown key behavior.
@@ -53,6 +57,13 @@ public final class StaticConfigStoreOptions {
     return listStrategy;
   }
 
+  /// Returns how existing values are merged with generated defaults.
+  ///
+  /// @return value merge strategy
+  public MergeValueStrategy valueStrategy() {
+    return valueStrategy;
+  }
+
   /// Returns invalid value behavior.
   ///
   /// @return invalid value policy
@@ -65,28 +76,30 @@ public final class StaticConfigStoreOptions {
   /// @return merge options
   public MergeOptions mergeOptions() {
     return MergeOptions.builder()
-      .updateComments(updateComments)
+      .commentStrategy(commentStrategy)
       .removeUnknown(unknownKeyPolicy == StaticUnknownKeyPolicy.DROP)
       .listStrategy(listStrategy)
+      .valueStrategy(valueStrategy)
       .build();
   }
 
   /// Builder for [StaticConfigStoreOptions].
   public static final class Builder {
-    private boolean updateComments = true;
+    private MergeCommentStrategy commentStrategy = MergeCommentStrategy.FILL_MISSING;
     private StaticUnknownKeyPolicy unknownKeyPolicy = StaticUnknownKeyPolicy.PRESERVE;
     private MergeListStrategy listStrategy = MergeListStrategy.PRESERVE_EXISTING;
+    private MergeValueStrategy valueStrategy = MergeValueStrategy.REPLACE_INVALID;
     private StaticInvalidValuePolicy invalidValuePolicy = StaticInvalidValuePolicy.STRICT;
 
     private Builder() {
     }
 
-    /// Sets whether generated comments refresh existing comments during update.
+    /// Sets how generated comments merge with existing comments during update.
     ///
-    /// @param updateComments comment update policy
+    /// @param commentStrategy comment merge strategy
     /// @return this builder
-    public Builder updateComments(boolean updateComments) {
-      this.updateComments = updateComments;
+    public Builder commentStrategy(MergeCommentStrategy commentStrategy) {
+      this.commentStrategy = Objects.requireNonNull(commentStrategy, "commentStrategy");
       return this;
     }
 
@@ -105,6 +118,15 @@ public final class StaticConfigStoreOptions {
     /// @return this builder
     public Builder listStrategy(MergeListStrategy listStrategy) {
       this.listStrategy = Objects.requireNonNull(listStrategy, "listStrategy");
+      return this;
+    }
+
+    /// Sets how existing values are merged with generated defaults.
+    ///
+    /// @param valueStrategy value merge strategy
+    /// @return this builder
+    public Builder valueStrategy(MergeValueStrategy valueStrategy) {
+      this.valueStrategy = Objects.requireNonNull(valueStrategy, "valueStrategy");
       return this;
     }
 
