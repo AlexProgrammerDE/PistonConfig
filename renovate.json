@@ -1,0 +1,40 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    ":dependencyDashboard"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "schedule": [
+    "before 5am on monday"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "gradle",
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "non-major dependencies"
+    },
+    {
+      "matchManagers": [
+        "gradle"
+      ],
+      "commitMessageTopic": "Gradle dependency {{depName}}"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "commitMessageTopic": "GitHub Action {{depName}}"
+    }
+  ]
+}
