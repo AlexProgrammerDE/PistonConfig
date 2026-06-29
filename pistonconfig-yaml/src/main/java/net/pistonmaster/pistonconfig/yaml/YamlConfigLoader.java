@@ -32,10 +32,16 @@ import org.yaml.snakeyaml.nodes.ScalarNode;
 import org.yaml.snakeyaml.nodes.SequenceNode;
 import org.yaml.snakeyaml.nodes.Tag;
 
-/**
- * YAML reader and writer backed by SnakeYAML's comment-aware node API.
- */
+/// YAML reader and writer backed by SnakeYAML's comment-aware node API.
 public final class YamlConfigLoader implements ConfigLoader {
+  /// Creates a YAML loader.
+  public YamlConfigLoader() {
+  }
+
+  /// Loads a YAML document from a reader.
+  ///
+  /// @param reader source reader
+  /// @return loaded document
   @Override
   public ConfigDocument load(Reader reader) {
     var loaderOptions = new LoaderOptions();
@@ -54,6 +60,10 @@ public final class YamlConfigLoader implements ConfigLoader {
     }
   }
 
+  /// Saves a document as block-style YAML.
+  ///
+  /// @param document document to save
+  /// @param writer destination writer
   @Override
   public void save(ConfigDocument document, Writer writer) {
     var dumperOptions = new DumperOptions();

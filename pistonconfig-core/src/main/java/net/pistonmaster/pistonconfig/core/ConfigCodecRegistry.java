@@ -4,12 +4,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Registry for custom and built-in type codecs.
- */
+/// Registry for custom and built-in type codecs.
+///
+/// The registry starts with scalar codecs for common Java primitives and wrapper
+/// types. Applications can register additional codecs for records, value
+/// objects, or domain types.
 public final class ConfigCodecRegistry {
   private final Map<Class<?>, ConfigCodec<?>> codecs = new LinkedHashMap<>();
 
+  /// Creates a registry with the built-in scalar codecs installed.
   public ConfigCodecRegistry() {
     register(String.class, new ScalarCodec<>(node -> node.asString()
       .orElseThrow(() -> new ConfigException("Expected a string value."))));
@@ -27,11 +30,24 @@ public final class ConfigCodecRegistry {
     register(double.class, codec(Double.class));
   }
 
+  /// Registers or replaces the codec for a Java type.
+  ///
+  /// @param type Java type handled by the codec
+  /// @param codec codec implementation
+  /// @param <T> Java type handled by the codec
+  /// @return this registry
   public <T> ConfigCodecRegistry register(Class<T> type, ConfigCodec<? extends T> codec) {
     codecs.put(Objects.requireNonNull(type, "type"), Objects.requireNonNull(codec, "codec"));
     return this;
   }
 
+  /// Encodes a Java value using the codec registered for its runtime class.
+  ///
+  /// `null` values are encoded as `ConfigNode.nullValue()`.
+  ///
+  /// @param value value to encode
+  /// @param <T> Java value type
+  /// @return encoded node
   public <T> ConfigNode encode(T value) {
     if (value == null) {
       return ConfigNode.nullValue();
@@ -42,10 +58,22 @@ public final class ConfigCodecRegistry {
     return codec(valueType).encode(value, this);
   }
 
+  /// Decodes a configuration node into the requested Java type.
+  ///
+  /// @param node source node
+  /// @param type Java type to decode
+  /// @param <T> Java type to decode
+  /// @return decoded value
   public <T> T decode(ConfigNode node, Class<T> type) {
     return codec(type).decode(node, this);
   }
 
+  /// Looks up the codec for a Java type.
+  ///
+  /// @param type Java type to resolve
+  /// @param <T> Java type handled by the codec
+  /// @return registered codec
+  /// @throws ConfigException if no codec is registered for `type`
   @SuppressWarnings("unchecked")
   public <T> ConfigCodec<T> codec(Class<T> type) {
     var codec = codecs.get(Objects.requireNonNull(type, "type"));

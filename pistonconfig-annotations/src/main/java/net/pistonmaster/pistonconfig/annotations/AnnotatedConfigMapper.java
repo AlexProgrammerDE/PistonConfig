@@ -13,20 +13,30 @@ import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
 
-/**
- * Maps annotation based configuration objects to and from {@link ConfigDocument}.
- */
+/// Maps annotation-based configuration objects to and from [ConfigDocument].
+///
+/// The mapper reads non-static, non-transient fields, honors field names and
+/// comments from this package, and delegates value conversion to a
+/// [ConfigCodecRegistry].
 public final class AnnotatedConfigMapper {
   private final ConfigCodecRegistry codecRegistry;
 
+  /// Creates a mapper with a fresh [ConfigCodecRegistry].
   public AnnotatedConfigMapper() {
     this(new ConfigCodecRegistry());
   }
 
+  /// Creates a mapper with a caller-provided codec registry.
+  ///
+  /// @param codecRegistry registry used to encode and decode field values
   public AnnotatedConfigMapper(ConfigCodecRegistry codecRegistry) {
     this.codecRegistry = Objects.requireNonNull(codecRegistry, "codecRegistry");
   }
 
+  /// Writes the current field values of a config object into a new document.
+  ///
+  /// @param config config object to inspect
+  /// @return document containing encoded defaults
   public ConfigDocument writeDefaults(Object config) {
     Objects.requireNonNull(config, "config");
     var document = ConfigDocument.empty();
@@ -34,6 +44,10 @@ public final class AnnotatedConfigMapper {
     return document;
   }
 
+  /// Writes the current field values of a config object into an existing document.
+  ///
+  /// @param document target document
+  /// @param config config object to inspect
   public void writeInto(ConfigDocument document, Object config) {
     Objects.requireNonNull(document, "document");
     Objects.requireNonNull(config, "config");
@@ -50,6 +64,12 @@ public final class AnnotatedConfigMapper {
     }
   }
 
+  /// Instantiates a config type and reads matching values from a document.
+  ///
+  /// @param document source document
+  /// @param type config class with a no-args constructor
+  /// @param <T> config type
+  /// @return populated config instance
   public <T> T read(ConfigDocument document, Class<T> type) {
     Objects.requireNonNull(document, "document");
     Objects.requireNonNull(type, "type");
@@ -59,6 +79,10 @@ public final class AnnotatedConfigMapper {
     return instance;
   }
 
+  /// Reads matching values from a document into an existing config object.
+  ///
+  /// @param document source document
+  /// @param target config object to mutate
   public void readInto(ConfigDocument document, Object target) {
     Objects.requireNonNull(document, "document");
     Objects.requireNonNull(target, "target");

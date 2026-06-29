@@ -6,9 +6,12 @@ import java.util.Map;
 import java.util.Objects;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 
-/**
- * Applies environment variable and system property overrides to a configuration document.
- */
+/// Applies environment variable and system property overrides to a configuration
+/// document.
+///
+/// Environment keys use uppercase underscore-separated names. System property
+/// keys use dotted names. Both are written into a [ConfigDocument] as parsed
+/// scalar values.
 public final class EnvironmentOverrides {
   private final String environmentPrefix;
   private final String propertyPrefix;
@@ -27,12 +30,23 @@ public final class EnvironmentOverrides {
     this.properties = Map.copyOf(properties);
   }
 
+  /// Creates overrides from the current process environment and system properties.
+  ///
+  /// @param prefix shared prefix used for both environment variables and system properties
+  /// @return process-backed overrides
   public static EnvironmentOverrides system(String prefix) {
     var properties = new LinkedHashMap<String, String>();
     System.getProperties().forEach((key, value) -> properties.put(key.toString(), value.toString()));
     return new EnvironmentOverrides(prefix, prefix, System.getenv(), properties);
   }
 
+  /// Creates overrides from explicit environment and property maps.
+  ///
+  /// @param environmentPrefix environment variable prefix
+  /// @param propertyPrefix system property prefix
+  /// @param environment environment variable map
+  /// @param properties system property map
+  /// @return override source
   public static EnvironmentOverrides of(
     String environmentPrefix,
     String propertyPrefix,
@@ -47,6 +61,10 @@ public final class EnvironmentOverrides {
     );
   }
 
+  /// Applies all matching overrides to a document in place.
+  ///
+  /// @param document target document
+  /// @return the same document for chaining
   public ConfigDocument applyTo(ConfigDocument document) {
     Objects.requireNonNull(document, "document");
 

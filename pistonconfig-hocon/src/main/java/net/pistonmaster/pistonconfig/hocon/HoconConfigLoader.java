@@ -25,10 +25,16 @@ import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
 import net.pistonmaster.pistonconfig.core.ConfigSourceLocation;
 
-/**
- * HOCON reader and writer backed by Lightbend Config.
- */
+/// HOCON reader and writer backed by Lightbend Config.
 public final class HoconConfigLoader implements ConfigLoader {
+  /// Creates a HOCON loader.
+  public HoconConfigLoader() {
+  }
+
+  /// Loads a HOCON document from a reader.
+  ///
+  /// @param reader source reader
+  /// @return loaded document
   @Override
   public ConfigDocument load(Reader reader) {
     try {
@@ -43,6 +49,10 @@ public final class HoconConfigLoader implements ConfigLoader {
     }
   }
 
+  /// Saves a document as HOCON.
+  ///
+  /// @param document document to save
+  /// @param writer destination writer
   @Override
   public void save(ConfigDocument document, Writer writer) {
     var renderOptions = ConfigRenderOptions.defaults()

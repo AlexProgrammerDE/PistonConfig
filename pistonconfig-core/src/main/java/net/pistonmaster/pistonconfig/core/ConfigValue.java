@@ -2,12 +2,17 @@ package net.pistonmaster.pistonconfig.core;
 
 import java.util.LinkedHashMap;
 
-/**
- * Sealed, immutable value model used by codecs and format adapters.
- */
+/// Sealed, immutable value model used by codecs and format adapters.
 public sealed interface ConfigValue permits ObjectValue, ListValue, ScalarValue, NullValue {
+  /// Returns the structural kind of this value.
+  ///
+  /// @return value kind
   ConfigValueKind kind();
 
+  /// Converts a mutable node tree into immutable values.
+  ///
+  /// @param node source node
+  /// @return immutable value
   static ConfigValue fromNode(ConfigNode node) {
     return switch (node.kind()) {
       case OBJECT -> {
@@ -21,6 +26,10 @@ public sealed interface ConfigValue permits ObjectValue, ListValue, ScalarValue,
     };
   }
 
+  /// Converts an immutable value tree into mutable nodes.
+  ///
+  /// @param value source value
+  /// @return mutable node
   static ConfigNode toNode(ConfigValue value) {
     return switch (value) {
       case ObjectValue objectValue -> {

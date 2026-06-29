@@ -107,7 +107,7 @@ subprojects {
 
     tasks.withType<Javadoc>().configureEach {
       options.encoding = "UTF-8"
-      (options as StandardJavadocDocletOptions).addBooleanOption("Xdoclint:all,-missing", true)
+      (options as StandardJavadocDocletOptions).addBooleanOption("Xdoclint:all", true)
     }
 
     tasks.withType<Test>().configureEach {

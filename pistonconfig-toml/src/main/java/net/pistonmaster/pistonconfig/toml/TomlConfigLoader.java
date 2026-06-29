@@ -20,10 +20,16 @@ import net.pistonmaster.pistonconfig.core.ConfigLoader;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
 
-/**
- * TOML reader and writer backed by Night Config.
- */
+/// TOML reader and writer backed by Night Config.
 public final class TomlConfigLoader implements ConfigLoader {
+  /// Creates a TOML loader.
+  public TomlConfigLoader() {
+  }
+
+  /// Loads a TOML document from a reader.
+  ///
+  /// @param reader source reader
+  /// @return loaded document
   @Override
   public ConfigDocument load(Reader reader) {
     try {
@@ -35,6 +41,10 @@ public final class TomlConfigLoader implements ConfigLoader {
     }
   }
 
+  /// Saves a document as TOML.
+  ///
+  /// @param document document to save
+  /// @param writer destination writer
   @Override
   public void save(ConfigDocument document, Writer writer) {
     try {

@@ -6,13 +6,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
-/**
- * Convenience methods for loading and saving documents from paths.
- */
+/// Convenience methods for loading and saving documents from paths.
 public final class ConfigLoaders {
   private ConfigLoaders() {
   }
 
+  /// Loads a UTF-8 configuration file through a loader.
+  ///
+  /// @param path file path to read
+  /// @param loader format loader
+  /// @return loaded document
+  /// @throws ConfigException when the file cannot be read
   public static ConfigDocument load(Path path, ConfigLoader loader) {
     Objects.requireNonNull(path, "path");
     Objects.requireNonNull(loader, "loader");
@@ -24,6 +28,12 @@ public final class ConfigLoaders {
     }
   }
 
+  /// Saves a document as UTF-8 through a loader, creating parent directories.
+  ///
+  /// @param path file path to write
+  /// @param loader format loader
+  /// @param document document to save
+  /// @throws ConfigException when the file cannot be written
   public static void save(Path path, ConfigLoader loader, ConfigDocument document) {
     Objects.requireNonNull(path, "path");
     Objects.requireNonNull(loader, "loader");

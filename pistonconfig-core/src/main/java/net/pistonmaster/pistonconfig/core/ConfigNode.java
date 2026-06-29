@@ -9,9 +9,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
-/**
- * Mutable node in a format-agnostic configuration tree.
- */
+/// Mutable node in a format-agnostic configuration tree.
+///
+/// A node stores one structural kind, optional comments, source decorations, and
+/// backend metadata. Mutating a node into another kind clears the old value and
+/// child containers.
 public final class ConfigNode {
   private ConfigValueKind kind;
   private Map<String, ConfigNode> objectChildren;
@@ -25,63 +27,111 @@ public final class ConfigNode {
     become(kind);
   }
 
+  /// Creates an empty object node.
+  ///
+  /// @return object node
   public static ConfigNode object() {
     return new ConfigNode(ConfigValueKind.OBJECT);
   }
 
+  /// Creates an empty list node.
+  ///
+  /// @return list node
   public static ConfigNode list() {
     return new ConfigNode(ConfigValueKind.LIST);
   }
 
+  /// Creates a scalar node.
+  ///
+  /// @param value scalar value
+  /// @return scalar node
   public static ConfigNode scalar(Object value) {
     var node = new ConfigNode(ConfigValueKind.SCALAR);
     node.value = normalizeScalar(value);
     return node;
   }
 
+  /// Creates a null node.
+  ///
+  /// @return null node
   public static ConfigNode nullValue() {
     return new ConfigNode(ConfigValueKind.NULL);
   }
 
+  /// Returns the current structural kind.
+  ///
+  /// @return node kind
   public ConfigValueKind kind() {
     return kind;
   }
 
+  /// Returns the comments attached to this node value.
+  ///
+  /// @return value comments
   public ConfigComment comment() {
     return comment;
   }
 
+  /// Replaces the comments attached to this node value.
+  ///
+  /// @param comment value comments
+  /// @return this node
   public ConfigNode setComment(ConfigComment comment) {
     this.comment = Objects.requireNonNull(comment, "comment");
     return this;
   }
 
+  /// Returns source decorations for this node.
+  ///
+  /// @return source decorations
   public ConfigNodeDecorations decorations() {
     return decorations;
   }
 
+  /// Replaces the source decorations for this node.
+  ///
+  /// @param decorations source decorations
+  /// @return this node
   public ConfigNode setDecorations(ConfigNodeDecorations decorations) {
     this.decorations = Objects.requireNonNull(decorations, "decorations");
     return this;
   }
 
+  /// Applies a decoration update function.
+  ///
+  /// @param decorator update function
+  /// @return this node
   public ConfigNode decorate(UnaryOperator<ConfigNodeDecorations> decorator) {
     decorations = Objects.requireNonNull(decorator, "decorator").apply(decorations);
     return this;
   }
 
+  /// Returns whether this node is an object.
+  ///
+  /// @return `true` for object nodes
   public boolean isObject() {
     return kind == ConfigValueKind.OBJECT;
   }
 
+  /// Returns whether this node is a list.
+  ///
+  /// @return `true` for list nodes
   public boolean isList() {
     return kind == ConfigValueKind.LIST;
   }
 
+  /// Returns whether this node is a scalar.
+  ///
+  /// @return `true` for scalar nodes
   public boolean isScalar() {
     return kind == ConfigValueKind.SCALAR;
   }
 
+  /// Returns object children as an immutable snapshot.
+  ///
+  /// Non-object nodes return an empty map.
+  ///
+  /// @return object children
   public Map<String, ConfigNode> objectChildren() {
     if (!isObject()) {
       return Map.of();
@@ -90,6 +140,11 @@ public final class ConfigNode {
     return Collections.unmodifiableMap(new LinkedHashMap<>(objectChildren));
   }
 
+  /// Returns list children as an immutable snapshot.
+  ///
+  /// Non-list nodes return an empty list.
+  ///
+  /// @return list children
   public List<ConfigNode> listChildren() {
     if (!isList()) {
       return List.of();
@@ -98,18 +153,37 @@ public final class ConfigNode {
     return List.copyOf(listChildren);
   }
 
+  /// Returns the raw scalar value.
+  ///
+  /// Object, list, and null nodes return `null`.
+  ///
+  /// @return raw scalar value
   public Object rawValue() {
     return value;
   }
 
+  /// Returns backend metadata as an immutable snapshot.
+  ///
+  /// @return metadata map
   public Map<String, Object> metadata() {
     return Collections.unmodifiableMap(new LinkedHashMap<>(metadata));
   }
 
+  /// Looks up one metadata value.
+  ///
+  /// @param key metadata key
+  /// @return metadata value when present
   public Optional<Object> metadata(String key) {
     return Optional.ofNullable(metadata.get(Objects.requireNonNull(key, "key")));
   }
 
+  /// Sets or removes a metadata value.
+  ///
+  /// Passing `null` removes the key.
+  ///
+  /// @param key metadata key
+  /// @param value metadata value, or `null` to remove it
+  /// @return this node
   public ConfigNode setMetadata(String key, Object value) {
     Objects.requireNonNull(key, "key");
     if (value == null) {
@@ -120,6 +194,11 @@ public final class ConfigNode {
     return this;
   }
 
+  /// Reads this node as a string when possible.
+  ///
+  /// Null nodes return an empty optional. Other values use `toString()`.
+  ///
+  /// @return string value when present
   public Optional<String> asString() {
     if (kind == ConfigValueKind.NULL) {
       return Optional.empty();
@@ -128,6 +207,12 @@ public final class ConfigNode {
     return Optional.ofNullable(value).map(Object::toString);
   }
 
+  /// Reads this node as a boolean when possible.
+  ///
+  /// Boolean scalars are returned directly. String scalars accept `true` and
+  /// `false` ignoring case.
+  ///
+  /// @return boolean value when conversion succeeds
   public Optional<Boolean> asBoolean() {
     if (value instanceof Boolean booleanValue) {
       return Optional.of(booleanValue);
@@ -142,6 +227,12 @@ public final class ConfigNode {
     return Optional.empty();
   }
 
+  /// Reads this node as an integer when possible.
+  ///
+  /// Number scalars use `Number.intValue()`. String scalars are parsed as base-10
+  /// integers.
+  ///
+  /// @return integer value when conversion succeeds
   public Optional<Integer> asInt() {
     if (value instanceof Number numberValue) {
       return Optional.of(numberValue.intValue());
@@ -158,6 +249,12 @@ public final class ConfigNode {
     return Optional.empty();
   }
 
+  /// Reads this node as a long when possible.
+  ///
+  /// Number scalars use `Number.longValue()`. String scalars are parsed as base-10
+  /// long values.
+  ///
+  /// @return long value when conversion succeeds
   public Optional<Long> asLong() {
     if (value instanceof Number numberValue) {
       return Optional.of(numberValue.longValue());
@@ -174,6 +271,12 @@ public final class ConfigNode {
     return Optional.empty();
   }
 
+  /// Reads this node as a double when possible.
+  ///
+  /// Number scalars use `Number.doubleValue()`. String scalars are parsed as
+  /// base-10 doubles.
+  ///
+  /// @return double value when conversion succeeds
   public Optional<Double> asDouble() {
     if (value instanceof Number numberValue) {
       return Optional.of(numberValue.doubleValue());
@@ -190,6 +293,10 @@ public final class ConfigNode {
     return Optional.empty();
   }
 
+  /// Finds a descendant node by path.
+  ///
+  /// @param path descendant path
+  /// @return node when every path segment exists through object nodes
   public Optional<ConfigNode> find(ConfigPath path) {
     Objects.requireNonNull(path, "path");
     ConfigNode current = this;
@@ -208,6 +315,13 @@ public final class ConfigNode {
     return Optional.of(current);
   }
 
+  /// Finds or creates a descendant object path.
+  ///
+  /// Missing path segments are created as object nodes. Non-object nodes along
+  /// the path are converted to objects.
+  ///
+  /// @param path descendant path
+  /// @return node at the requested path
   public ConfigNode getOrCreate(ConfigPath path) {
     Objects.requireNonNull(path, "path");
     ConfigNode current = this;
@@ -220,10 +334,22 @@ public final class ConfigNode {
     return current;
   }
 
+  /// Sets a scalar value at a descendant path.
+  ///
+  /// @param path descendant path
+  /// @param value scalar value
+  /// @return this node
   public ConfigNode set(ConfigPath path, Object value) {
     return setNode(path, ConfigNode.scalar(value));
   }
 
+  /// Sets a node at a descendant path.
+  ///
+  /// The replacement is copied before insertion.
+  ///
+  /// @param path descendant path
+  /// @param replacement replacement node
+  /// @return this node
   public ConfigNode setNode(ConfigPath path, ConfigNode replacement) {
     Objects.requireNonNull(path, "path");
     Objects.requireNonNull(replacement, "replacement");
@@ -239,6 +365,13 @@ public final class ConfigNode {
     return this;
   }
 
+  /// Removes a descendant node.
+  ///
+  /// Removing the root resets this node to an empty object and returns the
+  /// previous value.
+  ///
+  /// @param path descendant path
+  /// @return removed node when one existed
   public Optional<ConfigNode> remove(ConfigPath path) {
     Objects.requireNonNull(path, "path");
     if (path.isRoot()) {
@@ -252,18 +385,34 @@ public final class ConfigNode {
       .map(parent -> parent.objectChildren.remove(path.lastSegment()));
   }
 
+  /// Appends a scalar value to this node as a list item.
+  ///
+  /// Non-list nodes are converted to lists.
+  ///
+  /// @param value scalar value
+  /// @return this node
   public ConfigNode addListValue(Object value) {
     ensureList();
     listChildren.add(ConfigNode.scalar(value));
     return this;
   }
 
+  /// Appends a node to this node as a list item.
+  ///
+  /// Non-list nodes are converted to lists. The supplied node is copied before
+  /// insertion.
+  ///
+  /// @param node node to append
+  /// @return this node
   public ConfigNode addListNode(ConfigNode node) {
     ensureList();
     listChildren.add(Objects.requireNonNull(node, "node").copy());
     return this;
   }
 
+  /// Creates a deep copy of this node.
+  ///
+  /// @return copied node
   public ConfigNode copy() {
     var copy = new ConfigNode(kind);
     copy.value = value;
@@ -286,16 +435,25 @@ public final class ConfigNode {
     return copy;
   }
 
+  /// Returns mutable object children for package collaborators.
+  ///
+  /// @return mutable object children
   Map<String, ConfigNode> mutableObjectChildren() {
     ensureObject();
     return objectChildren;
   }
 
+  /// Returns mutable list children for package collaborators.
+  ///
+  /// @return mutable list children
   List<ConfigNode> mutableListChildren() {
     ensureList();
     return listChildren;
   }
 
+  /// Replaces this node with a deep copy of another node.
+  ///
+  /// @param other source node
   void copyFrom(ConfigNode other) {
     become(other.kind);
     value = other.value;

@@ -7,9 +7,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Immutable dotted path used to address nodes inside a configuration document.
- */
+/// Immutable dotted path used to address nodes inside a configuration document.
+///
+/// Dot characters and backslashes inside a segment are escaped by [toString]
+/// and understood by [parse].
 public final class ConfigPath {
   private static final ConfigPath ROOT = new ConfigPath(List.of());
 
@@ -19,10 +20,18 @@ public final class ConfigPath {
     this.segments = List.copyOf(segments);
   }
 
+  /// Returns the root path.
+  ///
+  /// @return root path
   public static ConfigPath root() {
     return ROOT;
   }
 
+  /// Creates a path from individual segments.
+  ///
+  /// @param first first path segment
+  /// @param rest remaining path segments
+  /// @return path containing all supplied segments
   public static ConfigPath of(String first, String... rest) {
     Objects.requireNonNull(first, "first");
     Objects.requireNonNull(rest, "rest");
@@ -33,6 +42,13 @@ public final class ConfigPath {
     return new ConfigPath(validate(segments));
   }
 
+  /// Parses a dotted path string.
+  ///
+  /// Dots separate path segments. A backslash escapes the next character, so
+  /// `server\.host` addresses a single segment named `server.host`.
+  ///
+  /// @param path dotted path string
+  /// @return parsed path
   public static ConfigPath parse(String path) {
     Objects.requireNonNull(path, "path");
     if (path.isEmpty()) {
@@ -74,14 +90,24 @@ public final class ConfigPath {
     return new ConfigPath(validate(segments));
   }
 
+  /// Returns path segments.
+  ///
+  /// @return immutable path segments
   public List<String> segments() {
     return segments;
   }
 
+  /// Returns whether this path addresses the root node.
+  ///
+  /// @return `true` for the root path
   public boolean isRoot() {
     return segments.isEmpty();
   }
 
+  /// Returns the final path segment.
+  ///
+  /// @return final segment
+  /// @throws ConfigException when this is the root path
   public String lastSegment() {
     if (segments.isEmpty()) {
       throw new ConfigException("The root path has no last segment.");
@@ -90,6 +116,9 @@ public final class ConfigPath {
     return segments.getLast();
   }
 
+  /// Returns the parent path.
+  ///
+  /// @return parent path, or empty for the root path
   public Optional<ConfigPath> parent() {
     if (segments.isEmpty()) {
       return Optional.empty();
@@ -98,6 +127,10 @@ public final class ConfigPath {
     return Optional.of(new ConfigPath(segments.subList(0, segments.size() - 1)));
   }
 
+  /// Creates a child path by appending one segment.
+  ///
+  /// @param segment child segment
+  /// @return child path
   public ConfigPath child(String segment) {
     validateSegment(segment);
 
@@ -106,6 +139,9 @@ public final class ConfigPath {
     return new ConfigPath(childSegments);
   }
 
+  /// Renders this path as an escaped dotted string.
+  ///
+  /// @return dotted path string
   @Override
   public String toString() {
     if (segments.isEmpty()) {
@@ -120,11 +156,18 @@ public final class ConfigPath {
     return String.join(".", escaped);
   }
 
+  /// Compares this path by segment value.
+  ///
+  /// @param other value to compare
+  /// @return `true` when both paths have the same segments
   @Override
   public boolean equals(Object other) {
     return other instanceof ConfigPath path && segments.equals(path.segments);
   }
 
+  /// Returns the segment list hash code.
+  ///
+  /// @return hash code
   @Override
   public int hashCode() {
     return segments.hashCode();

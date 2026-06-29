@@ -20,10 +20,16 @@ import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.configuration2.PropertiesConfigurationLayout;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
-/**
- * Properties reader and writer backed by Apache Commons Configuration.
- */
+/// Properties reader and writer backed by Apache Commons Configuration.
 public final class PropertiesConfigLoader implements ConfigLoader {
+  /// Creates a properties loader.
+  public PropertiesConfigLoader() {
+  }
+
+  /// Loads a properties document from a reader.
+  ///
+  /// @param reader source reader
+  /// @return loaded document
   @Override
   public ConfigDocument load(Reader reader) {
     var configuration = new PropertiesConfiguration();
@@ -68,6 +74,10 @@ public final class PropertiesConfigLoader implements ConfigLoader {
     return document;
   }
 
+  /// Saves a document as a properties file.
+  ///
+  /// @param document document to save
+  /// @param writer destination writer
   @Override
   public void save(ConfigDocument document, Writer writer) {
     var configuration = new PropertiesConfiguration();

@@ -3,13 +3,19 @@ package net.pistonmaster.pistonconfig.core;
 import java.util.ArrayList;
 import java.util.Objects;
 
-/**
- * Merges default configuration documents into current user configuration documents.
- */
+/// Merges default configuration documents into current user configuration documents.
 public final class ConfigMerger {
   private ConfigMerger() {
   }
 
+  /// Merges default values into a target node in place.
+  ///
+  /// Object nodes are merged key by key. List nodes follow the strategy in
+  /// `MergeOptions.listStrategy()`. Existing scalar values are preserved.
+  ///
+  /// @param target current user node to update
+  /// @param defaults default node to merge from
+  /// @param options merge behavior
   public static void merge(ConfigNode target, ConfigNode defaults, MergeOptions options) {
     Objects.requireNonNull(target, "target");
     Objects.requireNonNull(defaults, "defaults");

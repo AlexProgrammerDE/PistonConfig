@@ -19,9 +19,7 @@ import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigLoader;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 
-/**
- * JSON and JSONC reader/writer backed by json5-java.
- */
+/// JSON, JSONC, and JSON5 reader and writer backed by json5-java.
 public final class JsonConfigLoader implements ConfigLoader {
   private final Json5 json5 = Json5.builder(builder -> builder
     .parseComments()
@@ -37,6 +35,14 @@ public final class JsonConfigLoader implements ConfigLoader {
     .insertFinalNewline()
     .build());
 
+  /// Creates a JSON-family loader.
+  public JsonConfigLoader() {
+  }
+
+  /// Loads a JSON-family document from a reader.
+  ///
+  /// @param reader source reader
+  /// @return loaded document
   @Override
   public ConfigDocument load(Reader reader) {
     try {
@@ -46,6 +52,10 @@ public final class JsonConfigLoader implements ConfigLoader {
     }
   }
 
+  /// Saves a document as formatted JSON5.
+  ///
+  /// @param document document to save
+  /// @param writer destination writer
   @Override
   public void save(ConfigDocument document, Writer writer) {
     try {
