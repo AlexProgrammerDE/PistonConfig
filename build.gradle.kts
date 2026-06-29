@@ -48,7 +48,7 @@ subprojects {
   dependencies {
     add("compileOnly", "org.immutables:value-annotations:$immutablesVersion")
     add("annotationProcessor", "org.immutables:value:$immutablesVersion")
-    add("testImplementation", platform("org.junit:junit-bom:5.14.0"))
+    add("testImplementation", platform("org.junit:junit-bom:6.1.1"))
     add("testImplementation", "org.junit.jupiter:junit-jupiter")
     add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
   }
