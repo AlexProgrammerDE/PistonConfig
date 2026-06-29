@@ -3,7 +3,7 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.plugins.signing.SigningExtension
 
 plugins {
-  id("io.freefair.lombok") version "9.1.0" apply false
+  id("io.freefair.lombok") version "9.5.0" apply false
 }
 
 val pistonConfigVersion = providers.gradleProperty("VERSION_NAME").get()
@@ -48,7 +48,7 @@ subprojects {
   dependencies {
     add("compileOnly", "org.immutables:value-annotations:$immutablesVersion")
     add("annotationProcessor", "org.immutables:value:$immutablesVersion")
-    add("testImplementation", platform("org.junit:junit-bom:5.14.0"))
+    add("testImplementation", platform("org.junit:junit-bom:6.1.1"))
     add("testImplementation", "org.junit.jupiter:junit-jupiter")
     add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
   }
