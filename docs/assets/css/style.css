@@ -124,6 +124,101 @@ pre code {
   background: transparent;
 }
 
+.highlight {
+  margin: 18px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--code);
+}
+
+.highlight pre {
+  margin: 0;
+  border: 0;
+}
+
+.highlight code {
+  color: #24292f;
+}
+
+.highlight .c,
+.highlight .cm,
+.highlight .cp,
+.highlight .c1,
+.highlight .cs {
+  color: #6a737d;
+}
+
+.highlight .k,
+.highlight .kc,
+.highlight .kd,
+.highlight .kn,
+.highlight .kp,
+.highlight .kr,
+.highlight .kt {
+  color: #cf222e;
+}
+
+.highlight .s,
+.highlight .sa,
+.highlight .sb,
+.highlight .sc,
+.highlight .dl,
+.highlight .sd,
+.highlight .s2,
+.highlight .se,
+.highlight .sh,
+.highlight .si,
+.highlight .sx,
+.highlight .sr,
+.highlight .s1,
+.highlight .ss {
+  color: #0a3069;
+}
+
+.highlight .m,
+.highlight .mb,
+.highlight .mf,
+.highlight .mh,
+.highlight .mi,
+.highlight .il,
+.highlight .mo {
+  color: #0550ae;
+}
+
+.highlight .na,
+.highlight .nc,
+.highlight .nd,
+.highlight .ne,
+.highlight .nf,
+.highlight .nx {
+  color: #8250df;
+}
+
+.highlight .nb,
+.highlight .bp,
+.highlight .nv,
+.highlight .vc,
+.highlight .vg,
+.highlight .vi,
+.highlight .vm {
+  color: #953800;
+}
+
+.highlight .o,
+.highlight .ow {
+  color: #0550ae;
+}
+
+.highlight .gd {
+  color: #82071e;
+  background: #ffebe9;
+}
+
+.highlight .gi {
+  color: #116329;
+  background: #dafbe1;
+}
+
 @media (max-width: 680px) {
   .site-header {
     align-items: flex-start;

@@ -3,6 +3,13 @@ description: Format-agnostic Java configuration library.
 url: "https://config.pistonmaster.net"
 baseurl: ""
 markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    block:
+      line_numbers: false
 plugins:
   - jekyll-seo-tag
 exclude:
