@@ -1,7 +1,3 @@
----
-title: PistonConfig
----
-
 # PistonConfig
 
 PistonConfig is a Java 25 configuration library for projects that need one abstraction across multiple config formats. It combines a lossless core document model, comment-aware backends, typed codecs, annotation-based configs, static field declarations, environment overrides, and ordered migrations.
