@@ -73,6 +73,35 @@ final class TomlConfigLoaderTest {
   }
 
   @Test
+  void roundTripsMixedInlineTablesArraysAndNestedComments() {
+    var loader = new TomlConfigLoader();
+    var document = loader.load(new StringReader("""
+      # Profiles comment.
+      profiles = [
+        { name = "dev", ports = [25565, 25566], flags = ["debug", "fast"] },
+        { name = "prod", ports = [443], limits = { burst = 20, rate = 10 } },
+      ]
+
+      [server]
+      enabled = true
+      """));
+
+    var writer = new StringWriter();
+    loader.save(document, writer);
+    var roundTripped = loader.load(new StringReader(writer.toString()));
+    var profiles = roundTripped.find("profiles").orElseThrow().listChildren();
+    var dev = profiles.getFirst();
+    var prod = profiles.get(1);
+
+    assertEquals("Profiles comment.", roundTripped.find("profiles").orElseThrow().comment().leadingText().getFirst());
+    assertEquals("dev", dev.find(ConfigPath.of("name")).flatMap(ConfigNode::asString).orElseThrow());
+    assertEquals(25566, dev.find(ConfigPath.of("ports")).orElseThrow().listChildren().get(1).asInt().orElseThrow());
+    assertEquals("fast", dev.find(ConfigPath.of("flags")).orElseThrow().listChildren().get(1).asString().orElseThrow());
+    assertEquals(20, prod.find(ConfigPath.of("limits", "burst")).flatMap(ConfigNode::asInt).orElseThrow());
+    assertTrue(roundTripped.find("server.enabled").orElseThrow().asBoolean().orElseThrow());
+  }
+
+  @Test
   void wrapsInvalidTomlAsConfigException() {
     assertThrows(ConfigException.class, () -> new TomlConfigLoader().load(new StringReader("server = [")));
   }

@@ -19,6 +19,7 @@ import java.util.UUID;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
+import net.pistonmaster.pistonconfig.core.ConfigPath;
 import net.pistonmaster.pistonconfig.core.MergeListStrategy;
 import net.pistonmaster.pistonconfig.yaml.YamlConfigFormat;
 import net.pistonmaster.pistonconfig.yaml.YamlConfigLoader;
@@ -76,6 +77,37 @@ final class AnnotatedConfigMapperTest {
 
     assertTrue(document.find("request-timeout").isPresent());
     assertEquals(15, mapper.read(document, FormattedConfig.class).requestTimeout);
+  }
+
+  @Test
+  void scalarCoercionHandlesStringBackedNestedCollectionsMapsAndRecords() {
+    var document = ConfigDocument.empty()
+      .set("enabled", "true")
+      .set("port", "25566")
+      .setNode(ConfigPath.of("limits"), ConfigNode.list()
+        .addListValue("10")
+        .addListValue(20))
+      .set("grade", "A")
+      .set("timeout", "PT5S")
+      .set("endpoints.DEV.1.host", "dev.example.com")
+      .set("endpoints.DEV.1.port", "8080")
+      .set("endpoints.PROD.2.host", "prod.example.com")
+      .set("endpoints.PROD.2.port", 443);
+
+    assertThrows(ConfigException.class, () -> new AnnotatedConfigMapper().read(document, CoercedConfig.class));
+
+    var mapper = new AnnotatedConfigMapper(ConfigMapperOptions.builder()
+      .scalarCoercion(ConfigScalarCoercion.STRING)
+      .build());
+    var config = mapper.read(document, CoercedConfig.class);
+
+    assertTrue(config.enabled());
+    assertEquals(25566, config.port());
+    assertEquals(List.of(10, 20), config.limits());
+    assertEquals('A', config.grade());
+    assertEquals(Duration.ofSeconds(5), config.timeout());
+    assertEquals(new Endpoint("dev.example.com", 8080), config.endpoints().get(Mode.DEV).get(1));
+    assertEquals(new Endpoint("prod.example.com", 443), config.endpoints().get(Mode.PROD).get(2));
   }
 
   @Test
@@ -231,6 +263,16 @@ final class AnnotatedConfigMapperTest {
     SimplePortConfig() {
       this(25565);
     }
+  }
+
+  record CoercedConfig(
+    boolean enabled,
+    int port,
+    List<Integer> limits,
+    Map<Mode, Map<Integer, Endpoint>> endpoints,
+    char grade,
+    Duration timeout
+  ) {
   }
 
   record User(String name, boolean admin) {

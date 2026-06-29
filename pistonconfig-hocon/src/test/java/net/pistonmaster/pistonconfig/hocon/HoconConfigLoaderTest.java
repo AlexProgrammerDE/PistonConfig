@@ -16,6 +16,7 @@ import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
+import net.pistonmaster.pistonconfig.core.ConfigValueKind;
 import org.junit.jupiter.api.Test;
 
 final class HoconConfigLoaderTest {
@@ -71,6 +72,40 @@ final class HoconConfigLoaderTest {
     assertTrue(hocon.contains("Host comment."));
     assertTrue(hocon.contains("localhost"));
     assertTrue(hocon.contains("25565"));
+  }
+
+  @Test
+  void roundTripsMixedObjectsListsNullsLiteralKeysAndOriginMetadata() {
+    var loader = new HoconConfigLoader();
+    var document = loader.load(new StringReader("""
+      server {
+        # Routes comment.
+        routes = [
+          { path = "/", filters = ["auth", null], limits { burst = 20, rate = 10 } },
+          { path = "/admin", filters = [], enabled = false }
+        ]
+        "literal.key" {
+          value = "kept"
+        }
+      }
+      """));
+
+    var writer = new StringWriter();
+    loader.save(document, writer);
+    var roundTripped = loader.load(new StringReader(writer.toString()));
+    var routes = roundTripped.find("server.routes").orElseThrow().listChildren();
+    var firstRoute = routes.getFirst();
+    var filters = firstRoute.find(ConfigPath.of("filters")).orElseThrow().listChildren();
+    var limits = firstRoute.find(ConfigPath.of("limits")).orElseThrow();
+
+    assertEquals("Routes comment.", roundTripped.find("server.routes").orElseThrow().comment().leadingText().getFirst());
+    assertEquals("/", firstRoute.find(ConfigPath.of("path")).flatMap(ConfigNode::asString).orElseThrow());
+    assertEquals("auth", filters.getFirst().asString().orElseThrow());
+    assertEquals(ConfigValueKind.NULL, filters.get(1).kind());
+    assertEquals(20, limits.find(ConfigPath.of("burst")).flatMap(ConfigNode::asInt).orElseThrow());
+    assertFalse(limits.decorations().attributes().get(HoconMetadataKeys.RENDERED).isBlank());
+    assertEquals("/admin", routes.get(1).find(ConfigPath.of("path")).flatMap(ConfigNode::asString).orElseThrow());
+    assertEquals("kept", roundTripped.find(ConfigPath.of("server").child("literal.key").child("value")).flatMap(ConfigNode::asString).orElseThrow());
   }
 
   @Test

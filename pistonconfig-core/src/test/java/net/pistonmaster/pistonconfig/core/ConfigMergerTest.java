@@ -210,6 +210,61 @@ final class ConfigMergerTest {
   }
 
   @Test
+  void mergeCanRepairShapesDropUnknownsReplaceListsAndRefreshPresentationTogether() {
+    var defaults = ConfigDocument.empty()
+      .setNode(ConfigPath.parse("server.host"), ConfigNode.scalar("0.0.0.0")
+        .setComment(ConfigComment.builder()
+          .addLeading(commentLine("Default host."))
+          .build())
+        .decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+          .withScalarStyle(ConfigScalarStyle.DOUBLE_QUOTED)
+          .withAttributes(Map.of("source", "defaults"))))
+      .setNode(ConfigPath.parse("server.modules"), ConfigNode.list()
+        .addListValue("core")
+        .addListValue("yaml"))
+      .setNode(ConfigPath.parse("server.database"), ConfigNode.object()
+        .set(ConfigPath.of("host"), "db.internal")
+        .set(ConfigPath.of("port"), 5432));
+    var current = ConfigDocument.empty()
+      .setNode(ConfigPath.parse("server.host"), ConfigNode.scalar("custom.example.com")
+        .setComment(ConfigComment.builder()
+          .addLeading(commentLine("User host."))
+          .build())
+        .decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+          .withScalarStyle(ConfigScalarStyle.SINGLE_QUOTED)
+          .withAttributes(Map.of("source", "current"))
+          .withValueLocation(ConfigSourceLocation.builder()
+            .description("current.yml")
+            .line(4)
+            .column(2)
+            .build())))
+      .setNode(ConfigPath.parse("server.modules"), ConfigNode.list()
+        .addListValue("custom"))
+      .set("server.database", "broken")
+      .set("server.legacy", true)
+      .set("debug", true);
+
+    current.mergeDefaults(defaults, MergeOptions.builder()
+      .commentStrategy(MergeCommentStrategy.REPLACE)
+      .listStrategy(MergeListStrategy.REPLACE)
+      .removeUnknown(true)
+      .valueStrategy(MergeValueStrategy.REPLACE_INVALID)
+      .build());
+
+    var host = current.find("server.host").orElseThrow();
+    assertEquals("custom.example.com", host.asString().orElseThrow());
+    assertEquals(List.of("Default host."), host.comment().leadingText());
+    assertEquals(ConfigScalarStyle.DOUBLE_QUOTED, host.decorations().scalarStyle());
+    assertEquals("defaults", host.decorations().attributes().get("source"));
+    assertEquals("current.yml", host.decorations().valueLocation().description());
+    assertIterableEquals(List.of("core", "yaml"), scalarList(current, "server.modules"));
+    assertEquals("db.internal", current.find("server.database.host").flatMap(ConfigNode::asString).orElseThrow());
+    assertEquals(5432, current.find("server.database.port").flatMap(ConfigNode::asInt).orElseThrow());
+    assertTrue(current.find("server.legacy").isEmpty());
+    assertTrue(current.find("debug").isEmpty());
+  }
+
+  @Test
   void builderDefaultsAreConservative() {
     var options = MergeOptions.builder().build();
 
@@ -220,7 +275,11 @@ final class ConfigMergerTest {
   }
 
   private static List<String> scalarList(ConfigDocument document) {
-    return document.find("modules")
+    return scalarList(document, "modules");
+  }
+
+  private static List<String> scalarList(ConfigDocument document, String path) {
+    return document.find(path)
       .orElseThrow()
       .listChildren()
       .stream()

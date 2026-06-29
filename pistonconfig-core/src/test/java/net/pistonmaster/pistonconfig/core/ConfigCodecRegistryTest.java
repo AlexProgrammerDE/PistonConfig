@@ -77,6 +77,18 @@ final class ConfigCodecRegistryTest {
     assertEquals(endpoint, registry.decode(encoded, Endpoint.class));
   }
 
+  @Test
+  void rejectsMalformedScalarsAcrossBuiltInCodecs() {
+    var registry = new ConfigCodecRegistry();
+
+    assertThrows(ConfigException.class, () -> registry.decode(ConfigNode.scalar("maybe"), boolean.class));
+    assertThrows(ConfigException.class, () -> registry.decode(ConfigNode.scalar("xy"), char.class));
+    assertThrows(ConfigException.class, () -> registry.decode(ConfigNode.scalar("1.5"), BigInteger.class));
+    assertThrows(ConfigException.class, () -> registry.decode(ConfigNode.object(), int.class));
+    assertThrows(ConfigException.class, () -> registry.decode(ConfigNode.scalar("not a uri"), URI.class));
+    assertThrows(ConfigException.class, () -> registry.decode(ConfigNode.scalar("DEV"), Mode.class));
+  }
+
   private record Endpoint(String host, int port) {
   }
 

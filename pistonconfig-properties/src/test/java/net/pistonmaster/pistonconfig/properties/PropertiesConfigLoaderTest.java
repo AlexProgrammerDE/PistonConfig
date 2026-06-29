@@ -108,6 +108,43 @@ final class PropertiesConfigLoaderTest {
   }
 
   @Test
+  void roundTripsFlattenedLiteralDotKeysListsNullsAndLayoutAttributes() {
+    var literalPath = ConfigPath.of("server").child("literal.key").child("value");
+    var document = ConfigDocument.empty();
+    document.root().setComment(ConfigComment.builder()
+      .addLeading(commentLine("Header.", ConfigCommentMarker.HASH))
+      .build());
+    document
+      .setNode(literalPath, ConfigNode.scalar("kept")
+        .setComment(ConfigComment.builder()
+          .addLeading(commentLine("Literal key comment.", ConfigCommentMarker.EXCLAMATION))
+          .build())
+        .decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
+          .withAttributes(Map.of(
+            PropertiesMetadataKeys.SEPARATOR, " : ",
+            PropertiesMetadataKeys.BLANK_LINES_BEFORE, "2"
+          ))))
+      .setNode(ConfigPath.of("modules"), ConfigNode.list()
+        .addListValue("core")
+        .addListValue("yaml"))
+      .setNode(ConfigPath.of("empty"), ConfigNode.nullValue());
+
+    var writer = new StringWriter();
+    new PropertiesConfigLoader().save(document, writer);
+    var roundTripped = new PropertiesConfigLoader().load(new StringReader(writer.toString()));
+    var literal = roundTripped.find(literalPath).orElseThrow();
+    var modules = roundTripped.find("modules").orElseThrow().listChildren();
+
+    assertEquals("Header.", roundTripped.root().comment().leadingText().getFirst());
+    assertEquals("kept", literal.asString().orElseThrow());
+    assertEquals("Literal key comment.", literal.comment().leadingText().getFirst());
+    assertEquals(2, Integer.parseInt(literal.decorations().attributes().get(PropertiesMetadataKeys.BLANK_LINES_BEFORE)));
+    assertEquals("core", modules.getFirst().asString().orElseThrow());
+    assertEquals("yaml", modules.get(1).asString().orElseThrow());
+    assertEquals("", roundTripped.find("empty").flatMap(ConfigNode::asString).orElseThrow());
+  }
+
+  @Test
   void wrapsInvalidPropertiesAsConfigException() {
     assertThrows(ConfigException.class, () -> new PropertiesConfigLoader().load(new ThrowingReader()));
   }

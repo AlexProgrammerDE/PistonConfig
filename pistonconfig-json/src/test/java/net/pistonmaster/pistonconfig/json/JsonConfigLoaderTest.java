@@ -103,4 +103,49 @@ final class JsonConfigLoaderTest {
       .orElseThrow()
       .rawValue());
   }
+
+  @Test
+  void roundTripsMixedJson5StructuresWithLiteralKeysCommentsNullsAndRadices() {
+    var loader = new JsonConfigLoader();
+    var document = loader.load(new StringReader("""
+      {
+        server: {
+          // Route table.
+          routes: [
+            { name: "dev", limits: [0b1010, 0o12, 0x10], enabled: true },
+            null,
+            { name: "prod", limits: [], enabled: false },
+          ],
+          "literal.key": {
+            value: "kept",
+          },
+        },
+      }
+      """));
+    document.setNode(ConfigPath.parse("server.maxConnections"), ConfigNode.scalar(255)
+      .setMetadata(JsonMetadataKeys.NUMBER_RADIX, 16)
+      .setComment(ConfigComment.builder()
+        .addLeading(ConfigCommentLine.builder()
+          .text("Maximum connections.")
+          .type(ConfigCommentType.BLOCK)
+          .marker(ConfigCommentMarker.DOUBLE_SLASH)
+          .build())
+        .build()));
+
+    var writer = new StringWriter();
+    loader.save(document, writer);
+    var roundTripped = loader.load(new StringReader(writer.toString()));
+    var routes = roundTripped.find("server.routes").orElseThrow().listChildren();
+    var limits = routes.getFirst().find(ConfigPath.of("limits")).orElseThrow().listChildren();
+
+    assertEquals("Route table.", roundTripped.find("server.routes").orElseThrow().comment().leadingText().getFirst());
+    assertEquals(10, limits.getFirst().asInt().orElseThrow());
+    assertEquals(ConfigScalarStyle.BINARY, limits.getFirst().decorations().scalarStyle());
+    assertEquals(8, limits.get(1).metadata(JsonMetadataKeys.NUMBER_RADIX).orElseThrow());
+    assertEquals(16, limits.get(2).asInt().orElseThrow());
+    assertEquals(ConfigValueKind.NULL, routes.get(1).kind());
+    assertEquals("kept", roundTripped.find(ConfigPath.of("server").child("literal.key").child("value")).flatMap(ConfigNode::asString).orElseThrow());
+    assertEquals(255, roundTripped.find("server.maxConnections").flatMap(ConfigNode::asInt).orElseThrow());
+    assertEquals(16, roundTripped.find("server.maxConnections").orElseThrow().metadata(JsonMetadataKeys.NUMBER_RADIX).orElseThrow());
+  }
 }

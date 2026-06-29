@@ -131,6 +131,41 @@ final class YamlConfigLoaderTest {
   }
 
   @Test
+  void roundTripsComplexNestedDocumentAfterSourcePreservingMutation() {
+    var loader = new YamlConfigLoader();
+    var document = loader.load(new StringReader("""
+      server:
+        # Port key comment.
+        port: 0x10 # active port
+        modules: [core, yaml, {name: prod, enabled: true}]
+        message: >
+          hello
+          world
+        nested:
+          literal.key: 'value'
+      empty: null
+      """));
+
+    document.setNodePreservingSource(ConfigPath.parse("server.port"), ConfigNode.scalar(25566));
+
+    var writer = new StringWriter();
+    loader.save(document, writer);
+    var roundTripped = loader.load(new StringReader(writer.toString()));
+    var port = roundTripped.find("server.port").orElseThrow();
+    var modules = roundTripped.find("server.modules").orElseThrow();
+
+    assertEquals(25566, port.asInt().orElseThrow());
+    assertEquals("25566", port.metadata(YamlMetadataKeys.SCALAR_RAW).orElseThrow());
+    assertEquals("Port key comment.", port.decorations().keyComment().leadingText().getFirst());
+    assertEquals("active port", port.comment().inlineText());
+    assertEquals(ConfigCollectionStyle.FLOW, modules.decorations().collectionStyle());
+    assertEquals("prod", modules.listChildren().get(2).find(ConfigPath.of("name")).flatMap(ConfigNode::asString).orElseThrow());
+    assertEquals(ConfigScalarStyle.FOLDED, roundTripped.find("server.message").orElseThrow().decorations().scalarStyle());
+    assertEquals("value", roundTripped.find(ConfigPath.of("server", "nested", "literal.key")).flatMap(ConfigNode::asString).orElseThrow());
+    assertEquals(ConfigValueKind.NULL, roundTripped.find("empty").orElseThrow().kind());
+  }
+
+  @Test
   void wrapsInvalidYamlAsConfigException() {
     assertThrows(ConfigException.class, () -> new YamlConfigLoader().load(new StringReader("broken: [")));
   }

@@ -1,15 +1,21 @@
 package net.pistonmaster.pistonconfig.env;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import net.pistonmaster.pistonconfig.core.ConfigComment;
+import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
+import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
+import net.pistonmaster.pistonconfig.core.ConfigCommentType;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
+import net.pistonmaster.pistonconfig.core.ConfigNodeDecorations;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
 import org.junit.jupiter.api.Test;
 
@@ -60,6 +66,53 @@ final class EnvironmentOverridesTest {
       .applyTo(document);
 
     assertEquals(25566, document.find("server.port").flatMap(ConfigNode::asInt).orElseThrow());
+  }
+
+  @Test
+  void mixedOverridesPreserveSourceDecorationsAndRejectUninferableShapes() {
+    var document = ConfigDocument.empty()
+      .setNode(ConfigPath.parse("server.port"), ConfigNode.scalar(25565)
+        .setComment(ConfigComment.builder()
+          .addLeading(ConfigCommentLine.builder()
+            .text("Port comment.")
+            .type(ConfigCommentType.BLOCK)
+            .marker(ConfigCommentMarker.HASH)
+            .build())
+          .build())
+        .setDecorations(ConfigNodeDecorations.builder()
+          .putAttribute("format", "yaml")
+          .build())
+        .setMetadata("raw", "0x63"))
+      .set("server.enabled", true)
+      .set("server.ratio", 0.5D)
+      .setNode(ConfigPath.parse("server.alias"), ConfigNode.nullValue());
+
+    EnvironmentOverrides.builder()
+      .environmentPrefix("app")
+      .propertyPrefix("app")
+      .putAllEnvironment(Map.of(
+        "APP_SERVER_PORT", "30000",
+        "APP_SERVER_ENABLED", "false",
+        "APP_SERVER_RATIO", "0.75",
+        "APP_SERVER_MISSING", "ignored"
+      ))
+      .putAllProperties(Map.of("app.server.port", "31000"))
+      .build()
+      .applyTo(document);
+    var port = document.find("server.port").orElseThrow();
+
+    assertEquals(31000, port.asInt().orElseThrow());
+    assertEquals("Port comment.", port.comment().leadingText().getFirst());
+    assertEquals("yaml", port.decorations().attributes().get("format"));
+    assertTrue(port.metadata("raw").isEmpty());
+    assertFalse(document.find("server.enabled").orElseThrow().asBoolean().orElseThrow());
+    assertEquals(0.75D, document.find("server.ratio").orElseThrow().asDouble().orElseThrow());
+    assertTrue(document.find("server.missing").isEmpty());
+
+    var nullOverride = EnvironmentOverrides.builder()
+      .putAllEnvironment(Map.of("SERVER_ALIAS", "primary"))
+      .build();
+    assertThrows(ConfigException.class, () -> nullOverride.applyTo(document));
   }
 
   @Test

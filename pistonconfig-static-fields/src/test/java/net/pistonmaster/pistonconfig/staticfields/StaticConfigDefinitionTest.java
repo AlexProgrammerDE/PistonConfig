@@ -27,6 +27,7 @@ import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigLoader;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
+import net.pistonmaster.pistonconfig.core.ConfigValueKind;
 import net.pistonmaster.pistonconfig.core.MergeListStrategy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -169,6 +170,40 @@ final class StaticConfigDefinitionTest {
   }
 
   @Test
+  void fallbackRewriteRepairsMixedInvalidParameterizedValuesWithoutTouchingValidNullOptionals() {
+    var registry = endpointRegistry();
+    var definition = StaticConfigDefinition.from(ServerOptions.class);
+    var document = definition.defaults(registry);
+    document.setNode(ConfigPath.parse("server.flags"), ConfigNode.scalar("not-a-list"));
+    document.setNode(ConfigPath.parse("server.limits"), ConfigNode.list()
+      .addListValue(10)
+      .addListValue("bad"));
+    document.setNode(ConfigPath.parse("server.endpoints"), ConfigNode.object()
+      .setNode(ConfigPath.of("DEV"), endpointNode("dev.example.com", 443))
+      .setNode(ConfigPath.of("PROD"), endpointNodeWithRawPort("prod.example.com", "bad")));
+    document.setNode(ConfigPath.parse("server.alias"), ConfigNode.nullValue());
+
+    var flags = definition.resolve(document, ServerOptions.FLAGS, registry, StaticInvalidValuePolicy.FALLBACK_AND_REWRITE);
+    var limits = definition.resolve(document, ServerOptions.LIMITS, registry, StaticInvalidValuePolicy.FALLBACK_AND_REWRITE);
+    var endpoints = definition.resolve(document, ServerOptions.ENDPOINTS, registry, StaticInvalidValuePolicy.FALLBACK_AND_REWRITE);
+    var alias = definition.resolve(document, ServerOptions.ALIAS, registry, StaticInvalidValuePolicy.FALLBACK_AND_REWRITE);
+
+    assertTrue(flags.requiresRewrite());
+    assertTrue(limits.requiresRewrite());
+    assertTrue(endpoints.requiresRewrite());
+    assertEquals(Optional.empty(), alias.value());
+    assertThrows(ConfigException.class, () -> definition.resolve(document, ServerOptions.FLAGS, registry, StaticInvalidValuePolicy.STRICT));
+
+    definition.rewriteInvalidValues(document, registry, StaticInvalidValuePolicy.FALLBACK_AND_REWRITE);
+
+    assertEquals(List.of("default"), definition.get(document, ServerOptions.FLAGS, registry));
+    assertEquals(Set.of(10), definition.get(document, ServerOptions.LIMITS, registry));
+    assertEquals(Map.of(Mode.DEV, new Endpoint("localhost", 8080)), definition.get(document, ServerOptions.ENDPOINTS, registry));
+    assertEquals(Optional.empty(), definition.get(document, ServerOptions.ALIAS, registry));
+    assertEquals(ConfigValueKind.NULL, document.find("server.alias").orElseThrow().kind());
+  }
+
+  @Test
   void validatorCatchesHolderAndCommentProblems() {
     var validator = new StaticConfigDefinitionValidator();
 
@@ -206,6 +241,12 @@ final class StaticConfigDefinitionTest {
   }
 
   private static ConfigNode endpointNode(String host, int port) {
+    return ConfigNode.object()
+      .set(ConfigPath.of("host"), host)
+      .set(ConfigPath.of("port"), port);
+  }
+
+  private static ConfigNode endpointNodeWithRawPort(String host, Object port) {
     return ConfigNode.object()
       .set(ConfigPath.of("host"), host)
       .set(ConfigPath.of("port"), port);
