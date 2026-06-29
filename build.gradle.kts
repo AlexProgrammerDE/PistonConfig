@@ -3,7 +3,7 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.plugins.signing.SigningExtension
 
 plugins {
-  id("io.freefair.lombok") version "9.1.0" apply false
+  id("io.freefair.lombok") version "9.5.0" apply false
 }
 
 val pistonConfigVersion = providers.gradleProperty("VERSION_NAME").get()
