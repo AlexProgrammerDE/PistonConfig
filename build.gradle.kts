@@ -1,3 +1,4 @@
+import org.gradle.api.GradleException
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.plugins.signing.SigningExtension
@@ -62,6 +63,32 @@ subprojects {
           add("api", "net.pistonmaster:$constrainedModuleName:$pistonConfigVersion")
         }
       }
+    }
+
+    val expectedBomCoordinates = libraryModuleNames
+      .map { moduleName -> "net.pistonmaster:$moduleName:$pistonConfigVersion" }
+      .toSet()
+    val actualBomCoordinates = configurations.getByName("api")
+      .dependencyConstraints
+      .map { constraint -> "${constraint.group}:${constraint.name}:${constraint.version}" }
+      .toSet()
+
+    val verifyBomConstraints = tasks.register("verifyBomConstraints") {
+      inputs.property("expectedCoordinates", expectedBomCoordinates)
+      inputs.property("actualCoordinates", actualBomCoordinates)
+
+      doLast {
+        if (actualBomCoordinates != expectedBomCoordinates) {
+          throw GradleException(
+            "BOM constraints did not match expected module coordinates. " +
+              "Expected $expectedBomCoordinates but found $actualBomCoordinates."
+          )
+        }
+      }
+    }
+
+    tasks.named("check") {
+      dependsOn(verifyBomConstraints)
     }
   } else {
     extensions.configure<JavaPluginExtension>("java") {

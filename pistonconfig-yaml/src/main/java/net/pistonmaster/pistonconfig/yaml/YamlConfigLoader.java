@@ -42,12 +42,16 @@ public final class YamlConfigLoader implements ConfigLoader {
     loaderOptions.setProcessComments(true);
     loaderOptions.setMergeOnCompose(true);
 
-    var node = new Yaml(loaderOptions).compose(reader);
-    if (node == null) {
-      return ConfigDocument.empty();
-    }
+    try {
+      var node = new Yaml(loaderOptions).compose(reader);
+      if (node == null) {
+        return ConfigDocument.empty();
+      }
 
-    return ConfigDocument.of(fromYaml(node));
+      return ConfigDocument.of(fromYaml(node));
+    } catch (RuntimeException exception) {
+      throw new ConfigException("Could not parse YAML configuration.", exception);
+    }
   }
 
   @Override

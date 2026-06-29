@@ -58,10 +58,10 @@ public final class PropertiesConfigLoader implements ConfigLoader {
     }
 
     if (layout.getHeaderComment() != null || layout.getFooterComment() != null) {
-      document.root().setComment(ConfigComment.ofPlain(
-        layout.getHeaderComment() == null ? List.of() : layout.getHeaderComment().lines().toList(),
-        "",
-        layout.getFooterComment() == null ? List.of() : layout.getFooterComment().lines().toList()
+      document.root().setComment(new ConfigComment(
+        layout.getHeaderComment() == null ? List.of() : parseCommentLines(layout.getHeaderComment()),
+        List.of(),
+        layout.getFooterComment() == null ? List.of() : parseCommentLines(layout.getFooterComment())
       ));
     }
 
@@ -148,12 +148,16 @@ public final class PropertiesConfigLoader implements ConfigLoader {
 
   private static ConfigComment parseComment(String comment) {
     return new ConfigComment(
-      comment.lines()
-        .map(PropertiesConfigLoader::parseCommentLine)
-        .toList(),
+      parseCommentLines(comment),
       List.of(),
       List.of()
     );
+  }
+
+  private static List<ConfigCommentLine> parseCommentLines(String comment) {
+    return comment.lines()
+      .map(PropertiesConfigLoader::parseCommentLine)
+      .toList();
   }
 
   private static ConfigCommentLine parseCommentLine(String rawLine) {

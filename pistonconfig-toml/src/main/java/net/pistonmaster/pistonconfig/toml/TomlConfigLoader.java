@@ -52,7 +52,7 @@ public final class TomlConfigLoader implements ConfigLoader {
       var child = fromValue(entry.getRawValue());
       var comment = entry.getComment();
       if (comment != null && !comment.isBlank()) {
-        child.setComment(new ConfigComment(comment.lines().toList(), ""));
+        child.setComment(new ConfigComment(comment.lines().map(String::stripLeading).toList(), ""));
       }
       child.decorate(decorations -> decorations.withCollectionStyle(ConfigCollectionStyle.TABLE));
       node.setNode(ConfigPath.of(entry.getKey()), child);

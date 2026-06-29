@@ -69,7 +69,7 @@ public final class HoconConfigLoader implements ConfigLoader {
 
     var comments = value.origin().comments();
     if (comments != null && !comments.isEmpty()) {
-      node.setComment(new ConfigComment(comments, ""));
+      node.setComment(new ConfigComment(comments.stream().map(String::stripLeading).toList(), ""));
     }
     node.decorate(decorations -> decorations
       .withValueLocation(ConfigSourceLocation.of(value.origin().description(), value.origin().lineNumber(), -1))
