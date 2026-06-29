@@ -1,12 +1,12 @@
 ---
 layout: default
 title: Annotation Configs
-description: Map annotated Java objects to PistonConfig documents.
+description: Map Java objects and records to PistonConfig documents.
 ---
 
 # Annotation Configs
 
-Use `pistonconfig-annotations` when a Java class should define default values, paths, field names, and comments.
+Use `pistonconfig-annotations` when a Java type should define defaults, names, comments, and typed access for a config file.
 
 ## Add the Module
 
@@ -15,69 +15,104 @@ dependencies {
   implementation(platform("net.pistonmaster:pistonconfig-bom:0.1.0-SNAPSHOT"))
   implementation("net.pistonmaster:pistonconfig-core")
   implementation("net.pistonmaster:pistonconfig-annotations")
+  implementation("net.pistonmaster:pistonconfig-yaml")
 }
 ```
 
-## Define a Config Class
+## Define a Config Type
 
 ```java
 @ConfigPathPrefix("server")
-final class ServerConfig {
+record ServerConfig(
   @ConfigName("bind-address")
   @ConfigComment("Address used by the public listener.")
-  String host = "0.0.0.0";
+  String host,
+  int port,
+  List<User> users,
+  Map<Mode, Endpoint> endpoints
+) {
+  ServerConfig() {
+    this(
+      "0.0.0.0",
+      25565,
+      List.of(new User("root", true)),
+      Map.of(Mode.PROD, new Endpoint("example.com", 443))
+    );
+  }
+}
 
-  @ConfigComment("Port used by the public listener.")
-  int port = 25565;
+record User(String name, boolean admin) {
+}
 
-  @ConfigIgnore
-  transient String runtimeOnly = "not persisted";
+record Endpoint(String host, int port) {
+}
+
+enum Mode {
+  PROD
 }
 ```
 
-The mapper works with fields. Reading into a new instance requires a no-args constructor.
+Records use a no-args constructor for defaults when one exists. Classes need a no-args constructor and mutable fields.
 
-## Generate Defaults
+## Load and Update a File
+
+```java
+var store = ConfigStores.forType(ServerConfig.class)
+  .format(YamlConfigFormat.INSTANCE)
+  .build();
+
+var config = store.update(Path.of("config.yml"));
+```
+
+`update` creates the file when it is missing, merges missing defaults when it exists, refreshes generated comments, saves the document, and returns the typed config object.
+
+## Use the Mapper Directly
 
 ```java
 var mapper = new AnnotatedConfigMapper();
-var defaults = mapper.writeDefaults(new ServerConfig());
+var defaults = mapper.writeDefaults(ServerConfig.class);
+var config = mapper.read(defaults, ServerConfig.class);
 ```
 
-`@ConfigComment` values become node comments. `@ConfigName` changes the final path segment. `@ConfigPathPrefix` prefixes every mapped field.
+Use the mapper directly when your application already controls loading, migrations, merging, or saving.
 
-## Read a Config Object
+## Configure Mapping
 
 ```java
-var document = ConfigLoaders.load(Path.of("config.yml"), YamlConfigFormat.INSTANCE.loader());
-var config = mapper.read(document, ServerConfig.class);
+var options = ConfigMapperOptions.builder()
+  .nameFormatter(ConfigNameFormatters.KEBAB_CASE)
+  .unknownKeyPolicy(ConfigUnknownKeyPolicy.DROP)
+  .outputNulls(false)
+  .inputNulls(false)
+  .build();
+
+var mapper = new AnnotatedConfigMapper(options);
 ```
 
-Missing fields keep the Java default values from the newly constructed instance.
+Options control name formatting, explicit null handling, stale key behavior during store updates, list merge behavior, scalar coercion, and custom serializers.
 
-## Read Into an Existing Object
+## Supported Shapes
 
-```java
-var config = new ServerConfig();
-mapper.readInto(document, config);
-```
+The mapper supports:
 
-Use this form when the target object needs constructor setup or values supplied by the application before file values are applied.
+- records and POJOs with no-args constructors
+- inherited instance fields
+- nested config objects
+- primitive types, wrappers, strings, characters, and enums
+- `BigInteger`, `BigDecimal`, `LocalDate`, `LocalTime`, `LocalDateTime`, `Instant`, `Duration`, `Period`, `UUID`, `File`, `Path`, `URL`, and `URI`
+- arrays, `List<T>`, `Set<T>`, and `Map<K, V>`
+- scalar, string-value, and enum map keys
 
-## Use Custom Types
-
-```java
-var mapper = new AnnotatedConfigMapper(codecRegistry);
-```
-
-The mapper delegates field encoding and decoding to `ConfigCodecRegistry`. Register a [custom codec](custom-codecs.html) before using application-specific value types.
+Raw generics, wildcard generics, type variables, and collection or config-object map keys are rejected with `ConfigException`.
 
 ## Field Selection Rules
 
-| Field kind | Mapped |
+| Member kind | Mapped |
 | --- | --- |
+| Record component | yes |
 | Instance field | yes |
+| Inherited instance field | yes |
 | Static field | no |
 | Transient field | no |
-| Field annotated with `@ConfigIgnore` | no |
-| Inherited instance field | yes |
+| Final field | no |
+| Member annotated with `@ConfigIgnore` | no |

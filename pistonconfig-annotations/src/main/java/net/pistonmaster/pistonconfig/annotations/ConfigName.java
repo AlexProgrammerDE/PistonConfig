@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 /// Overrides the configuration key used for a field.
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.RECORD_COMPONENT})
 public @interface ConfigName {
   /// Returns the path or key used for the annotated field.
   ///

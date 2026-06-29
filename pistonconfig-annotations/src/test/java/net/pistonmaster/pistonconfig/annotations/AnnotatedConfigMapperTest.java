@@ -1,108 +1,224 @@
 package net.pistonmaster.pistonconfig.annotations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import net.pistonmaster.pistonconfig.core.ConfigCodec;
-import net.pistonmaster.pistonconfig.core.ConfigCodecRegistry;
+import java.io.IOException;
+import java.lang.reflect.AnnotatedType;
+import java.nio.file.Files;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
-import net.pistonmaster.pistonconfig.core.ConfigPath;
+import net.pistonmaster.pistonconfig.core.MergeListStrategy;
+import net.pistonmaster.pistonconfig.yaml.YamlConfigFormat;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 final class AnnotatedConfigMapperTest {
+  @TempDir
+  private java.nio.file.Path tempDir;
+
   @Test
-  void writesAndReadsAnnotatedFields() {
+  void writesAndReadsRecordsNestedCollectionsMapsAndValueTypes() {
     var mapper = new AnnotatedConfigMapper();
-    var defaults = mapper.writeDefaults(new ExampleConfig());
+    var defaults = mapper.writeDefaults(ServerConfig.class);
+
+    assertEquals("127.0.0.1", defaults.find("server.bind-address").orElseThrow().asString().orElseThrow());
+    assertEquals("Address used by the server.", defaults.find("server.bind-address").orElseThrow().comment().leadingText().getFirst());
+    assertEquals("PT30S", defaults.find("server.timeout").orElseThrow().asString().orElseThrow());
 
     defaults.set("server.port", 25566);
-    var mapped = mapper.read(defaults, ExampleConfig.class);
+    defaults.set("server.endpoints.PROD.port", 443);
 
-    assertEquals(25566, mapped.port);
+    var config = mapper.read(defaults, ServerConfig.class);
+
+    assertEquals("127.0.0.1", config.host());
+    assertEquals(25566, config.port());
+    assertEquals(Mode.DEV, config.mode());
+    assertEquals(List.of(new User("root", true), new User("guest", false)), config.users());
+    assertEquals(Set.of(10, 20), config.limits());
+    assertEquals(new Endpoint("prod.example.com", 443), config.endpoints().get(Mode.PROD));
+    assertEquals(LocalDate.of(2026, 1, 1), config.releaseDates().getFirst().get(Mode.DEV));
+    assertEquals(Duration.ofSeconds(30), config.timeout());
   }
 
   @Test
-  void writesFieldNamesPrefixesCommentsAndIgnoresRuntimeFields() {
-    var mapper = new AnnotatedConfigMapper();
-    var defaults = mapper.writeDefaults(new NamedConfig());
-
-    var bindAddress = defaults.find("server.bind-address").orElseThrow();
-
-    assertEquals("127.0.0.1", bindAddress.asString().orElseThrow());
-    assertEquals("Address used by the server.", bindAddress.comment().leadingText().getFirst());
-    assertTrue(defaults.find("server.runtimeOnly").isEmpty());
-    assertTrue(defaults.find("server.ignored").isEmpty());
-    assertTrue(defaults.find("server.STATIC_VALUE").isEmpty());
-  }
-
-  @Test
-  void readsInheritedFieldsAndPreservesMissingDefaultsOnReadInto() {
+  void readsInheritedFieldsIntoClassesAndPreservesMissingDefaults() {
     var mapper = new AnnotatedConfigMapper();
     var target = new ChildConfig();
     var document = ConfigDocument.empty()
-      .set("server.child", "changed");
+      .set("server.child-name", "changed");
 
     mapper.readInto(document, target);
 
     assertEquals("base-default", target.base);
-    assertEquals("changed", target.child);
+    assertEquals("changed", target.childName);
   }
 
   @Test
-  void customCodecSupportsApplicationTypes() {
-    var registry = new ConfigCodecRegistry()
-      .register(Endpoint.class, new ConfigCodec<Endpoint>() {
-        @Override
-        public ConfigNode encode(Endpoint value, ConfigCodecRegistry registry) {
-          return ConfigNode.object()
-            .set(ConfigPath.of("host"), value.host())
-            .set(ConfigPath.of("port"), value.port());
-        }
+  void nameFormatterAppliesWhenNameAnnotationIsAbsent() {
+    var mapper = new AnnotatedConfigMapper(ConfigMapperOptions.builder()
+      .nameFormatter(ConfigNameFormatters.KEBAB_CASE)
+      .build());
 
-        @Override
-        public Endpoint decode(ConfigNode node, ConfigCodecRegistry registry) {
-          return new Endpoint(
-            node.find(ConfigPath.of("host")).flatMap(ConfigNode::asString).orElseThrow(),
-            node.find(ConfigPath.of("port")).flatMap(ConfigNode::asInt).orElseThrow()
-          );
-        }
-      });
-    var mapper = new AnnotatedConfigMapper(registry);
+    var document = mapper.write(new FormattedConfig());
 
-    var defaults = mapper.writeDefaults(new EndpointConfig());
-    defaults.set("endpoint.port", 8080);
-
-    assertEquals(new Endpoint("localhost", 8080), mapper.read(defaults, EndpointConfig.class).endpoint);
+    assertTrue(document.find("request-timeout").isPresent());
+    assertEquals(15, mapper.read(document, FormattedConfig.class).requestTimeout);
   }
 
   @Test
-  void throwsWhenTargetCannotBeInstantiated() {
+  void nullInputPolicyControlsExplicitNulls() {
+    var document = ConfigDocument.empty()
+      .setNode(net.pistonmaster.pistonconfig.core.ConfigPath.of("name"), ConfigNode.nullValue());
+
+    assertEquals("default", new AnnotatedConfigMapper().read(document, NullableConfig.class).name());
+
+    var mapper = new AnnotatedConfigMapper(ConfigMapperOptions.builder()
+      .inputNulls(true)
+      .build());
+
+    assertNull(mapper.read(document, NullableConfig.class).name());
+  }
+
+  @Test
+  void customSerializerCanBeRegisteredByType() {
+    var mapper = new AnnotatedConfigMapper(ConfigMapperOptions.builder()
+      .serializer(Endpoint.class, new EndpointSerializer())
+      .build());
+
+    var document = mapper.write(new EndpointHolder(new Endpoint("localhost", 25565)));
+    assertEquals("localhost:25565", document.find("endpoint").orElseThrow().asString().orElseThrow());
+    assertEquals(new Endpoint("localhost", 8080), mapper.read(ConfigDocument.empty().set("endpoint", "localhost:8080"), EndpointHolder.class).endpoint());
+  }
+
+  @Test
+  void serializerAnnotationCanTargetNestedCollectionElements() {
+    var mapper = new AnnotatedConfigMapper();
+    var document = mapper.write(new AnnotatedEndpointHolder(List.of(new Endpoint("one", 1), new Endpoint("two", 2))));
+
+    assertEquals("one:1", document.find("endpoints").orElseThrow().listChildren().getFirst().asString().orElseThrow());
+    assertEquals(new Endpoint("two", 2), mapper.read(document, AnnotatedEndpointHolder.class).endpoints().get(1));
+  }
+
+  @Test
+  void polymorphicMembersRoundTripWithAliases() {
+    var mapper = new AnnotatedConfigMapper();
+    var document = mapper.write(new ShapeConfig(new Circle(3)));
+
+    assertEquals("circle", document.find("shape.type").orElseThrow().asString().orElseThrow());
+    assertEquals(new ShapeConfig(new Circle(3)), mapper.read(document, ShapeConfig.class));
+  }
+
+  @Test
+  void rejectsUnsupportedGenericShapes() {
     var mapper = new AnnotatedConfigMapper();
 
-    assertThrows(ConfigException.class, () -> mapper.read(ConfigDocument.empty(), NoNoArgsConfig.class));
+    assertThrows(ConfigException.class, () -> mapper.write(new RawListConfig()));
+    assertThrows(ConfigException.class, () -> mapper.write(new WildcardConfig()));
+  }
+
+  @Test
+  void configStoreUpdatesFilesThroughAnyFormat() throws IOException {
+    var path = tempDir.resolve("server.yml");
+    Files.writeString(path, """
+      server:
+        port: 25566
+        stale: true
+      """);
+
+    var store = ConfigStores.forType(ServerConfig.class)
+      .format(YamlConfigFormat.INSTANCE)
+      .options(ConfigMapperOptions.builder()
+        .unknownKeyPolicy(ConfigUnknownKeyPolicy.DROP)
+        .listStrategy(MergeListStrategy.PRESERVE_EXISTING)
+        .build())
+      .validator(config -> {
+        if (config.port() <= 0) {
+          throw new ConfigException("Port must be positive.");
+        }
+      })
+      .build();
+
+    var config = store.update(path);
+    var written = Files.readString(path);
+
+    assertEquals(25566, config.port());
+    assertFalse(written.contains("stale"));
+    assertTrue(written.contains("bind-address"));
+  }
+
+  @Test
+  void configStoreReadOverridesAreNotPersistedDuringUpdate() throws IOException {
+    var path = tempDir.resolve("server-overrides.yml");
+    var store = ConfigStores.forType(SimplePortConfig.class)
+      .format(YamlConfigFormat.INSTANCE)
+      .readOverride(document -> document.set("port", 25566))
+      .build();
+
+    var config = store.update(path);
+
+    assertEquals(25566, config.port());
+    assertTrue(Files.readString(path).contains("25565"));
   }
 
   @ConfigPathPrefix("server")
-  static final class ExampleConfig {
-    @ConfigComment("Port used by the server.")
-    int port = 25565;
-  }
-
-  @ConfigPathPrefix("server")
-  static final class NamedConfig {
-    static final String STATIC_VALUE = "ignored";
-
+  record ServerConfig(
     @ConfigName("bind-address")
     @ConfigComment("Address used by the server.")
-    String host = "127.0.0.1";
+    String host,
+    int port,
+    Mode mode,
+    List<User> users,
+    Set<Integer> limits,
+    Map<Mode, Endpoint> endpoints,
+    List<Map<Mode, LocalDate>> releaseDates,
+    UUID id,
+    Duration timeout
+  ) {
+    ServerConfig() {
+      this(
+        "127.0.0.1",
+        25565,
+        Mode.DEV,
+        List.of(new User("root", true), new User("guest", false)),
+        Set.of(10, 20),
+        Map.of(
+          Mode.DEV, new Endpoint("dev.example.com", 80),
+          Mode.PROD, new Endpoint("prod.example.com", 8443)
+        ),
+        List.of(Map.of(Mode.DEV, LocalDate.of(2026, 1, 1))),
+        UUID.fromString("00000000-0000-0000-0000-000000000001"),
+        Duration.ofSeconds(30)
+      );
+    }
+  }
 
-    transient String runtimeOnly = "runtime";
+  record SimplePortConfig(int port) {
+    SimplePortConfig() {
+      this(25565);
+    }
+  }
 
-    @ConfigIgnore
-    String ignored = "ignored";
+  record User(String name, boolean admin) {
+  }
+
+  record Endpoint(String host, int port) {
+  }
+
+  enum Mode {
+    DEV,
+    PROD
   }
 
   static class BaseConfig {
@@ -111,18 +227,65 @@ final class AnnotatedConfigMapperTest {
 
   @ConfigPathPrefix("server")
   static final class ChildConfig extends BaseConfig {
-    String child = "child-default";
+    @ConfigName("child-name")
+    String childName = "child-default";
   }
 
-  static final class EndpointConfig {
-    Endpoint endpoint = new Endpoint("localhost", 25565);
+  static final class FormattedConfig {
+    int requestTimeout = 15;
   }
 
-  static final class NoNoArgsConfig {
-    NoNoArgsConfig(String ignored) {
+  record NullableConfig(String name) {
+    NullableConfig() {
+      this("default");
     }
   }
 
-  private record Endpoint(String host, int port) {
+  record EndpointHolder(Endpoint endpoint) {
+  }
+
+  record AnnotatedEndpointHolder(
+    @ConfigSerializeWith(value = EndpointSerializer.class, nesting = 1)
+    List<Endpoint> endpoints
+  ) {
+  }
+
+  static final class EndpointSerializer implements ConfigSerializer<Endpoint> {
+    @Override
+    public ConfigNode encode(Endpoint value, ConfigSerializationContext context) {
+      return ConfigNode.scalar(value.host() + ":" + value.port());
+    }
+
+    @Override
+    public Endpoint decode(ConfigNode node, ConfigSerializationContext context) {
+      var parts = node.asString().orElseThrow().split(":", 2);
+      return new Endpoint(parts[0], Integer.parseInt(parts[1]));
+    }
+  }
+
+  @ConfigPolymorphic
+  @ConfigPolymorphicTypes({
+    @ConfigPolymorphicTypes.Type(type = Circle.class, alias = "circle"),
+    @ConfigPolymorphicTypes.Type(type = Square.class, alias = "square")
+  })
+  sealed interface Shape permits Circle, Square {
+  }
+
+  record Circle(int radius) implements Shape {
+  }
+
+  record Square(int size) implements Shape {
+  }
+
+  record ShapeConfig(Shape shape) {
+  }
+
+  @SuppressWarnings("rawtypes")
+  static final class RawListConfig {
+    List values = List.of("bad");
+  }
+
+  static final class WildcardConfig {
+    List<? extends String> values = List.of("bad");
   }
 }

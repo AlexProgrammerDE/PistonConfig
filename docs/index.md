@@ -89,7 +89,7 @@ ConfigLoaders.save(path, loader, document);
   </section>
   <section class="home-panel">
     <h2>Typed Access</h2>
-    <p>Use built-in scalar codecs, custom codecs, annotations, static fields, or direct document edits from the same model.</p>
+    <p>Use typed stores, built-in scalar codecs, custom serialization, static fields, or direct document edits from the same model.</p>
   </section>
   <section class="home-panel">
     <h2>Operational Tools</h2>
@@ -102,11 +102,11 @@ ConfigLoaders.save(path, loader, document);
 <div class="doc-grid three">
   <a class="link-card" href="guides/">
     <h3>Guides</h3>
-    <p>Task-focused docs for installation, backends, merging, codecs, testing, and diagnostics.</p>
+    <p>Task-focused docs for installation, backends, typed access, merging, testing, and diagnostics.</p>
   </a>
   <a class="link-card" href="examples/">
     <h3>Examples</h3>
-    <p>Complete startup, conversion, record codec, and static key registry examples.</p>
+    <p>Complete startup, conversion, typed record, and static key registry examples.</p>
   </a>
   <a class="link-card" href="reference/">
     <h3>Reference</h3>

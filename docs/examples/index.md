@@ -19,7 +19,7 @@ Examples show how modules fit together in realistic code. Use them as starting p
   </a>
   <a class="link-card" href="typed-record-config.html">
     <h3>Typed Record Config</h3>
-    <p>Register a record codec and use it from annotation and static-field workflows.</p>
+    <p>Use a Java record with the generic typed store API.</p>
   </a>
   <a class="link-card" href="static-key-registry.html">
     <h3>Static Key Registry</h3>

@@ -36,12 +36,12 @@ Start with the full startup flow, then branch into the access style or operation
 
 <div class="doc-grid">
   <a class="link-card" href="custom-codecs.html">
-    <h3>Custom Codecs</h3>
-    <p>Encode records and domain value objects through the codec registry.</p>
+    <h3>Custom Serialization</h3>
+    <p>Encode domain value objects through typed serializers or static-field codecs.</p>
   </a>
   <a class="link-card" href="annotation-configs.html">
     <h3>Annotation Configs</h3>
-    <p>Map Java fields to defaults, comments, names, and path prefixes.</p>
+    <p>Map Java records and classes to typed config files.</p>
   </a>
   <a class="link-card" href="static-field-configs.html">
     <h3>Static Fields</h3>
@@ -49,7 +49,7 @@ Start with the full startup flow, then branch into the access style or operation
   </a>
   <a class="link-card" href="../concepts/access-styles.html">
     <h3>Choose an Access Style</h3>
-    <p>Compare manual nodes, annotations, static fields, and custom codecs.</p>
+    <p>Compare manual nodes, typed stores, static fields, and custom serialization.</p>
   </a>
 </div>
 

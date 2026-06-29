@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Access Styles
-description: Compare PistonConfig manual nodes, annotations, static fields, and custom codecs.
+description: Compare PistonConfig manual nodes, typed stores, static fields, and custom serialization.
 ---
 
 # Access Styles
@@ -21,16 +21,20 @@ Choose manual access when building tools, converters, migration helpers, or work
 
 ## Annotation Configs
 
-Annotation mapping lets Java classes define defaults and comments.
+Annotation mapping lets Java records and classes define defaults, comments, and typed reads.
 
 ```java
-final class ServerConfig {
+record ServerConfig(
   @ConfigComment("Public listener port.")
-  int port = 25565;
+  int port
+) {
+  ServerConfig() {
+    this(25565);
+  }
 }
 ```
 
-Choose annotations when your application already has config classes and field defaults are the source of truth.
+Choose annotations when your application wants a config object as the startup boundary.
 
 ## Static Fields
 
@@ -46,25 +50,25 @@ static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
 
 Choose static fields when keys are shared across code and you want one declaration for path, type, default, and comment.
 
-## Custom Codecs
+## Custom Serialization
 
-Codecs map domain types to nodes.
+Serializers and codecs map domain types to nodes.
 
 ```java
 record Endpoint(String host, int port) {
 }
 ```
 
-Choose codecs when a config value should be a record, value object, enum-like domain type, or other application type.
+Choose typed serializers for annotation configs. Choose core codecs for static fields and direct codec use.
 
 ## Mixing Styles
 
 | Need | Style |
 | --- | --- |
 | Full tree control | Manual API |
-| Config class defaults | Annotations |
+| Typed config object | Annotation store |
 | Shared typed keys | Static fields |
-| Domain value objects | Custom codecs |
+| Domain value objects | Custom serialization |
 | Deployment overrides | Environment module |
 | Release upgrades | Migration module |
 

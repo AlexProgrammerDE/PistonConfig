@@ -5,16 +5,20 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
+import net.pistonmaster.pistonconfig.core.ConfigNode;
+import net.pistonmaster.pistonconfig.core.ConfigPath;
+import net.pistonmaster.pistonconfig.core.ConfigValueKind;
 import net.pistonmaster.pistonconfig.core.PistonStyle;
 import org.immutables.value.Value;
 
 /// Applies environment variable and system property overrides to a configuration
 /// document.
 ///
-/// Environment keys use uppercase underscore-separated names. System property
-/// keys use dotted names. Both are written into a [ConfigDocument] as parsed
-/// scalar values.
+/// Environment keys use underscore-separated names. System property keys use
+/// dotted names. Overrides are coerced from the existing node type so typed
+/// defaults can define the shape before process-level values are applied.
 @PistonStyle
 @Value.Immutable
 public interface EnvironmentOverrides {
@@ -43,6 +47,25 @@ public interface EnvironmentOverrides {
   ///
   /// @return system properties
   Map<String, String> properties();
+
+  /// Returns whether environment variable names are matched case-sensitively.
+  ///
+  /// @return `true` for case-sensitive matching
+  @Value.Default
+  default boolean caseSensitiveEnvironment() {
+    return false;
+  }
+
+  /// Returns whether overrides may create paths that are not already present.
+  ///
+  /// Keep this disabled for typed configs so accidental environment variables do
+  /// not silently expand the schema.
+  ///
+  /// @return `true` when missing paths may be created
+  @Value.Default
+  default boolean allowNewPaths() {
+    return false;
+  }
 
   /// Creates an Immutables builder for environment overrides.
   ///
@@ -73,24 +96,88 @@ public interface EnvironmentOverrides {
   default ConfigDocument applyTo(ConfigDocument document) {
     Objects.requireNonNull(document, "document");
 
-    var normalizedEnvironmentPrefix = normalizeEnvironmentPrefix(environmentPrefix());
+    var normalizedEnvironmentPrefix = normalizeEnvironmentPrefix(environmentPrefix(), caseSensitiveEnvironment());
     var normalizedPropertyPrefix = normalizePropertyPrefix(propertyPrefix());
 
     for (Map.Entry<String, String> entry : environment().entrySet()) {
-      toEnvironmentPath(entry.getKey(), normalizedEnvironmentPrefix)
-        .ifPresent(path -> document.set(path, parseScalar(entry.getValue())));
+      toEnvironmentPath(entry.getKey(), normalizedEnvironmentPrefix, caseSensitiveEnvironment())
+        .ifPresent(path -> applyOverride(document, path, entry.getValue()));
     }
 
     for (Map.Entry<String, String> entry : properties().entrySet()) {
       toPropertyPath(entry.getKey(), normalizedPropertyPrefix)
-        .ifPresent(path -> document.set(path, parseScalar(entry.getValue())));
+        .ifPresent(path -> applyOverride(document, path, entry.getValue()));
     }
 
     return document;
   }
 
-  private static Optional<String> toEnvironmentPath(String key, String environmentPrefix) {
-    var normalized = key.toUpperCase(Locale.ROOT);
+  private void applyOverride(ConfigDocument document, String path, String rawValue) {
+    var existing = document.find(path);
+    if (existing.isEmpty()) {
+      if (allowNewPaths()) {
+        document.set(path, rawValue);
+      }
+      return;
+    }
+
+    var replacement = coerce(existing.get(), rawValue);
+    replacement.setComment(existing.get().comment());
+    replacement.setDecorations(existing.get().decorations());
+    document.setNode(ConfigPath.parse(path), replacement);
+  }
+
+  private static ConfigNode coerce(ConfigNode existing, String rawValue) {
+    if (existing.isObject() || existing.isList()) {
+      throw new ConfigException("Environment overrides cannot replace object or list nodes.");
+    }
+    if (existing.kind() == ConfigValueKind.NULL) {
+      throw new ConfigException("Environment overrides cannot infer a value type from null nodes.");
+    }
+
+    try {
+      var current = existing.rawValue();
+      if (current instanceof String) {
+        return ConfigNode.scalar(rawValue);
+      }
+      if (current instanceof Boolean) {
+        if ("true".equalsIgnoreCase(rawValue) || "false".equalsIgnoreCase(rawValue)) {
+          return ConfigNode.scalar(Boolean.parseBoolean(rawValue));
+        }
+        throw new ConfigException("Environment override value " + rawValue + " is not a boolean.");
+      }
+      if (current instanceof Byte) {
+        return ConfigNode.scalar(Byte.parseByte(rawValue));
+      }
+      if (current instanceof Short) {
+        return ConfigNode.scalar(Short.parseShort(rawValue));
+      }
+      if (current instanceof Integer) {
+        return ConfigNode.scalar(Integer.parseInt(rawValue));
+      }
+      if (current instanceof Long) {
+        return ConfigNode.scalar(Long.parseLong(rawValue));
+      }
+      if (current instanceof java.math.BigInteger) {
+        return ConfigNode.scalar(new java.math.BigInteger(rawValue));
+      }
+      if (current instanceof Float) {
+        return ConfigNode.scalar(Float.parseFloat(rawValue));
+      }
+      if (current instanceof Double) {
+        return ConfigNode.scalar(Double.parseDouble(rawValue));
+      }
+      if (current instanceof java.math.BigDecimal) {
+        return ConfigNode.scalar(new java.math.BigDecimal(rawValue));
+      }
+      return ConfigNode.scalar(rawValue);
+    } catch (NumberFormatException exception) {
+      throw new ConfigException("Environment override value " + rawValue + " does not match the existing scalar type.", exception);
+    }
+  }
+
+  private static Optional<String> toEnvironmentPath(String key, String environmentPrefix, boolean caseSensitive) {
+    var normalized = caseSensitive ? key : key.toUpperCase(Locale.ROOT);
     if (!environmentPrefix.isEmpty()) {
       var prefix = environmentPrefix + "_";
       if (!normalized.startsWith(prefix)) {
@@ -103,7 +190,8 @@ public interface EnvironmentOverrides {
       return Optional.empty();
     }
 
-    return Optional.of(normalized.toLowerCase(Locale.ROOT).replace('_', '.'));
+    var path = caseSensitive ? normalized : normalized.toLowerCase(Locale.ROOT);
+    return Optional.of(path.replace('_', '.'));
   }
 
   private static Optional<String> toPropertyPath(String key, String propertyPrefix) {
@@ -122,30 +210,13 @@ public interface EnvironmentOverrides {
     return Optional.of(key);
   }
 
-  private static Object parseScalar(String raw) {
-    if ("true".equalsIgnoreCase(raw) || "false".equalsIgnoreCase(raw)) {
-      return Boolean.parseBoolean(raw);
-    }
-
-    try {
-      return Long.parseLong(raw);
-    } catch (NumberFormatException _) {
-      // Keep checking scalar types.
-    }
-
-    try {
-      return Double.parseDouble(raw);
-    } catch (NumberFormatException _) {
-      return raw;
-    }
-  }
-
-  private static String normalizeEnvironmentPrefix(String prefix) {
+  private static String normalizeEnvironmentPrefix(String prefix, boolean caseSensitive) {
     if (prefix == null || prefix.isBlank()) {
       return "";
     }
 
-    return prefix.strip().replace('.', '_').replace('-', '_').toUpperCase(Locale.ROOT);
+    var normalized = prefix.strip().replace('.', '_').replace('-', '_');
+    return caseSensitive ? normalized : normalized.toUpperCase(Locale.ROOT);
   }
 
   private static String normalizePropertyPrefix(String prefix) {

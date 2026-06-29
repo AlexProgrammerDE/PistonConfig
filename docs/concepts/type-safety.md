@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Type Safety
-description: How PistonConfig uses codecs, records, static properties, and annotations for type-safe config access.
+description: How PistonConfig uses typed stores, records, static properties, and codecs for type-safe config access.
 ---
 
 # Type Safety
@@ -20,15 +20,19 @@ var value = document.find("server.port")
 
 Manual reads are explicit and safe because conversions return `Optional`.
 
-## Codecs Add Domain Types
+## Typed Stores Add Object Configs
 
-`ConfigCodec<T>` converts between `ConfigNode` and a Java type.
+`ConfigStore<T>` converts between a file and a Java config type.
 
 ```java
-var endpoint = codecs.decode(node, Endpoint.class);
+var store = ConfigStores.forType(ServerConfig.class)
+  .format(YamlConfigFormat.INSTANCE)
+  .build();
+
+var config = store.update(Path.of("config.yml"));
 ```
 
-Use codecs for records, value objects, and reusable nested config shapes.
+Use typed stores for records, object configs, nested collections, maps, and validation.
 
 ## Static Properties Bind Path and Type
 
@@ -42,17 +46,29 @@ static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
 
 The declaration carries the path, Java type, default value, and comments together.
 
-## Annotations Bind Fields and Defaults
+## Annotations Bind Members and Defaults
 
-Annotation mapping uses field types and Java default values.
+Annotation mapping uses field or record component types and Java default values.
 
 ```java
-final class ServerConfig {
-  int port = 25565;
+record ServerConfig(int port) {
+  ServerConfig() {
+    this(25565);
+  }
 }
 ```
 
 This is convenient when the application wants a config object rather than scattered property reads.
+
+## Codecs Support Scalar and Static-Field Access
+
+`ConfigCodec<T>` converts between `ConfigNode` and a Java type for APIs that work directly with codecs.
+
+```java
+var endpoint = codecs.decode(node, Endpoint.class);
+```
+
+Use codecs for static properties or direct document integrations. Use typed serializers for annotation configs.
 
 ## Boundary Rule
 

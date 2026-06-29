@@ -1,6 +1,6 @@
 # PistonConfig
 
-PistonConfig is a Java 25 configuration library for projects that need one abstraction across multiple config formats. It combines a lossless core document model, comment-aware backends, typed codecs, annotation-based configs, static field declarations, environment overrides, and ordered migrations.
+PistonConfig is a Java 25 configuration library for projects that need one abstraction across multiple config formats. It combines a lossless core document model, comment-aware backends, type-aware object configs, scalar codecs, static field declarations, environment overrides, and ordered migrations.
 
 The Maven group is `net.pistonmaster`. Module artifacts use the format `pistonconfig-<module>`.
 
@@ -14,7 +14,7 @@ The Maven group is `net.pistonmaster`. Module artifacts use the format `pistonco
 | `pistonconfig-json` | `json5-java`-backed JSON, JSONC, and JSON5 backend with comment and numeric style support. |
 | `pistonconfig-toml` | Night Config-backed TOML backend with commented config support. |
 | `pistonconfig-hocon` | Lightbend Config-backed HOCON backend. |
-| `pistonconfig-annotations` | ConfigLib-style annotation mapper for object configs and comments. |
+| `pistonconfig-annotations` | Type-aware object config mapper and generic config store API. |
 | `pistonconfig-static-fields` | ConfigMe-style static `ConfigProperty<T>` declarations. |
 | `pistonconfig-env` | System property and environment variable overrides. |
 | `pistonconfig-migrations` | Flyway-style ordered config migrations. |
@@ -73,15 +73,31 @@ current.mergeDefaults(defaults, MergeOptions.conservative());
 
 ```java
 @ConfigPathPrefix("server")
-final class ServerConfig {
+record ServerConfig(
   @ConfigComment("Port used by the server.")
-  int port = 25565;
+  int port
+) {
+  ServerConfig() {
+    this(25565);
+  }
 }
 
 var mapper = new AnnotatedConfigMapper();
-var defaults = mapper.writeDefaults(new ServerConfig());
+var defaults = mapper.writeDefaults(ServerConfig.class);
 var config = mapper.read(defaults, ServerConfig.class);
 ```
+
+## Typed Store
+
+```java
+var store = ConfigStores.forType(ServerConfig.class)
+  .format(YamlConfigFormat.INSTANCE)
+  .build();
+
+var config = store.update(Path.of("config.yml"));
+```
+
+The typed mapper supports records, POJOs with no-args constructors, nested objects, inherited fields, enums, common Java scalar value types, arrays, lists, sets, maps, custom serializers, and polymorphic members.
 
 ## Static Field Configs
 

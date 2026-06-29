@@ -56,7 +56,7 @@ try {
 }
 ```
 
-Syntax errors, missing required paths, invalid types, and failed custom codecs are different problems. Keep their messages distinct.
+Syntax errors, missing required paths, invalid types, and failed custom serializers or codecs are different problems. Keep their messages distinct.
 
 ## Validate After Migrations and Defaults
 

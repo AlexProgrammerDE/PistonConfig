@@ -1,23 +1,70 @@
 ---
 layout: default
-title: Custom Codecs
-description: Encode and decode custom Java types with ConfigCodecRegistry.
+title: Custom Serialization
+description: Encode and decode custom Java types for typed configs and static fields.
 ---
 
-# Custom Codecs
+# Custom Serialization
 
-Use a custom codec when a config value should map to an application type instead of a primitive scalar.
+Use custom serialization when a config value should map to an application type that is not covered by the built-in scalar and object mapper.
 
-## Define the Type
+## Typed Config Serializers
+
+For annotation configs, register a `ConfigSerializer<T>` in `ConfigMapperOptions`.
 
 ```java
 record Endpoint(String host, int port) {
 }
+
+final class EndpointSerializer implements ConfigSerializer<Endpoint> {
+  @Override
+  public ConfigNode encode(Endpoint value, ConfigSerializationContext context) {
+    return ConfigNode.scalar(value.host() + ":" + value.port());
+  }
+
+  @Override
+  public Endpoint decode(ConfigNode node, ConfigSerializationContext context) {
+    var parts = node.asString().orElseThrow().split(":", 2);
+    return new Endpoint(parts[0], Integer.parseInt(parts[1]));
+  }
+}
 ```
 
-Records are a good fit because they make config value objects immutable and explicit.
+```java
+var options = ConfigMapperOptions.builder()
+  .serializer(Endpoint.class, new EndpointSerializer())
+  .build();
 
-## Register a Codec
+var mapper = new AnnotatedConfigMapper(options);
+```
+
+The serializer receives a context so it can delegate nested values back to the mapper when needed.
+
+## Serializer Annotations
+
+Use `@ConfigSerializeWith` when one member needs a serializer without changing every use of the type.
+
+```java
+record ServerConfig(
+  @ConfigSerializeWith(EndpointSerializer.class)
+  Endpoint endpoint
+) {
+}
+```
+
+For collection elements, set `nesting`.
+
+```java
+record ServerConfig(
+  @ConfigSerializeWith(value = EndpointSerializer.class, nesting = 1)
+  List<Endpoint> endpoints
+) {
+}
+```
+
+## Static Field Codecs
+
+`pistonconfig-static-fields` still uses `ConfigCodecRegistry`. Register a `ConfigCodec<T>` when a static `ConfigProperty<T>` needs an application type.
 
 ```java
 var codecs = new ConfigCodecRegistry()
@@ -31,54 +78,13 @@ var codecs = new ConfigCodecRegistry()
 
     @Override
     public Endpoint decode(ConfigNode node, ConfigCodecRegistry registry) {
-      var host = node.find(ConfigPath.of("host"))
-        .flatMap(ConfigNode::asString)
-        .orElseThrow();
-      var port = node.find(ConfigPath.of("port"))
-        .flatMap(ConfigNode::asInt)
-        .orElseThrow();
+      var host = node.find(ConfigPath.of("host")).flatMap(ConfigNode::asString).orElseThrow();
+      var port = node.find(ConfigPath.of("port")).flatMap(ConfigNode::asInt).orElseThrow();
       return new Endpoint(host, port);
     }
   });
 ```
 
-Codecs receive the registry so they can delegate nested values to other codecs.
-
-## Use the Codec Directly
-
-```java
-var endpoint = new Endpoint("localhost", 25565);
-var node = codecs.encode(endpoint);
-var decoded = codecs.decode(node, Endpoint.class);
-```
-
-## Use the Codec With Annotations
-
-```java
-final class ServerConfig {
-  Endpoint endpoint = new Endpoint("localhost", 25565);
-}
-
-var mapper = new AnnotatedConfigMapper(codecs);
-var defaults = mapper.writeDefaults(new ServerConfig());
-var config = mapper.read(defaults, ServerConfig.class);
-```
-
-## Use the Codec With Static Fields
-
-```java
-final class ServerOptions {
-  static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty.<Endpoint>builder()
-    .path(ConfigPath.parse("endpoint"))
-    .type(Endpoint.class)
-    .defaultValue(new Endpoint("localhost", 25565))
-    .build();
-}
-
-var definition = StaticConfigDefinition.from(ServerOptions.class);
-var endpoint = definition.get(document, ServerOptions.ENDPOINT, codecs);
-```
-
 ## Error Handling
 
-The built-in scalar codecs throw `ConfigException` when a value cannot be decoded. Custom codecs should do the same when a node is structurally invalid.
+Throw `ConfigException` when a node has the wrong shape or a scalar value cannot be parsed. That keeps format errors, mapping errors, and application validation errors under the same exception type.

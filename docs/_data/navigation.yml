@@ -27,7 +27,7 @@ sections:
         url: /guides/format-backends.html
       - title: Merge Defaults
         url: /guides/merge-defaults.html
-      - title: Custom Codecs
+      - title: Custom Serialization
         url: /guides/custom-codecs.html
       - title: Annotation Configs
         url: /guides/annotation-configs.html

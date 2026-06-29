@@ -29,7 +29,7 @@ Use the BOM unless a parent build already manages PistonConfig versions.
 | `pistonconfig-json` | core | json5-java | JSON, JSONC, and JSON5 with comments and numeric style metadata. |
 | `pistonconfig-toml` | core | Night Config | TOML parser and writer support with commented configs. |
 | `pistonconfig-hocon` | core | Lightbend Config | HOCON parsing, origin comments, and rendered source attributes. |
-| `pistonconfig-annotations` | core | none | Object mapping through field annotations. |
+| `pistonconfig-annotations` | core | none | Type-aware object mapping and generic config stores. |
 | `pistonconfig-static-fields` | core | none | Static `ConfigProperty<T>` declarations. |
 | `pistonconfig-env` | core | none | Environment variable and system property overrides. |
 | `pistonconfig-migrations` | core | none | Ordered document migrations with stored schema version. |
@@ -72,5 +72,5 @@ Use the BOM unless a parent build already manages PistonConfig versions.
 | Plugin or app with one YAML file | core, yaml, migrations |
 | CLI app with environment overrides | core, toml or yaml, env |
 | Library exposing typed config keys | core, static-fields |
-| Application with object config classes | core, annotations, chosen backend |
+| Application with typed object config | core, annotations, chosen backend |
 | Config conversion tool | core plus every needed format backend |

@@ -1,77 +1,72 @@
 ---
 layout: default
 title: Typed Record Config
-description: Use a Java record with a custom codec, annotation mapping, and static properties.
+description: Use a Java record with the generic typed store API.
 ---
 
 # Typed Record Config
 
-Records work well for config value objects because they make the shape immutable and explicit.
+Records are the most direct way to define an immutable typed config.
 
-## Record Type
+## Config Type
 
 ```java
+@ConfigPathPrefix("server")
+record ServerConfig(
+  @ConfigName("bind-address")
+  String host,
+  int port,
+  Endpoint endpoint
+) {
+  ServerConfig() {
+    this("0.0.0.0", 25565, new Endpoint("localhost", 25565));
+  }
+}
+
 record Endpoint(String host, int port) {
 }
 ```
 
-## Codec
+The no-args constructor supplies defaults for `ConfigStore.update`.
+
+## Store
 
 ```java
-static ConfigCodec<Endpoint> endpointCodec() {
-  return new ConfigCodec<>() {
-    @Override
-    public ConfigNode encode(Endpoint value, ConfigCodecRegistry registry) {
-      return ConfigNode.object()
-        .set(ConfigPath.of("host"), value.host())
-        .set(ConfigPath.of("port"), value.port());
-    }
+var store = ConfigStores.forType(ServerConfig.class)
+  .format(YamlConfigFormat.INSTANCE)
+  .build();
 
-    @Override
-    public Endpoint decode(ConfigNode node, ConfigCodecRegistry registry) {
-      var host = node.find(ConfigPath.of("host")).flatMap(ConfigNode::asString).orElseThrow();
-      var port = node.find(ConfigPath.of("port")).flatMap(ConfigNode::asInt).orElseThrow();
-      return new Endpoint(host, port);
-    }
-  };
+var config = store.update(Path.of("config.yml"));
+```
+
+The store is format-agnostic. Swap `YamlConfigFormat.INSTANCE` for another backend when the file format changes.
+
+## Custom Serializer
+
+Nested records are mapped as objects by default. Use a serializer only when you want another representation.
+
+```java
+final class EndpointSerializer implements ConfigSerializer<Endpoint> {
+  @Override
+  public ConfigNode encode(Endpoint value, ConfigSerializationContext context) {
+    return ConfigNode.scalar(value.host() + ":" + value.port());
+  }
+
+  @Override
+  public Endpoint decode(ConfigNode node, ConfigSerializationContext context) {
+    var parts = node.asString().orElseThrow().split(":", 2);
+    return new Endpoint(parts[0], Integer.parseInt(parts[1]));
+  }
 }
 ```
 
-## Annotation Mapping
-
 ```java
-final class ServerConfig {
-  Endpoint endpoint = new Endpoint("localhost", 25565);
-}
+var options = ConfigMapperOptions.builder()
+  .serializer(Endpoint.class, new EndpointSerializer())
+  .build();
 
-var codecs = new ConfigCodecRegistry()
-  .register(Endpoint.class, endpointCodec());
-
-var mapper = new AnnotatedConfigMapper(codecs);
-var defaults = mapper.writeDefaults(new ServerConfig());
-var config = mapper.read(defaults, ServerConfig.class);
+var store = ConfigStores.forType(ServerConfig.class)
+  .format(YamlConfigFormat.INSTANCE)
+  .options(options)
+  .build();
 ```
-
-## Static Property
-
-```java
-final class ServerOptions {
-  static final ConfigProperty<Endpoint> ENDPOINT = ConfigProperty.<Endpoint>builder()
-    .path(ConfigPath.parse("server.endpoint"))
-    .type(Endpoint.class)
-    .defaultValue(new Endpoint("localhost", 25565))
-    .comment(ConfigComment.builder()
-      .addLeading(ConfigCommentLine.builder()
-        .text("Public listener endpoint.")
-        .type(ConfigCommentType.BLOCK)
-        .marker(ConfigCommentMarker.HASH)
-        .build())
-      .build())
-    .build();
-}
-
-var definition = StaticConfigDefinition.from(ServerOptions.class);
-var endpoint = definition.get(document, ServerOptions.ENDPOINT, codecs);
-```
-
-Use the same codec no matter which access style reads the value.

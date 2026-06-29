@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 /// Adds block comments to a generated configuration node.
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.TYPE})
+@Target({ElementType.FIELD, ElementType.RECORD_COMPONENT, ElementType.TYPE})
 public @interface ConfigComment {
   /// Returns comment lines to attach to the generated node.
   ///

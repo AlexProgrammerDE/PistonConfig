@@ -21,7 +21,7 @@ This page groups the main public API types by module. Use it when deciding where
 | `ConfigNodeDecorations` | Key comments, style information, source locations, and attributes. |
 | `ConfigSourceLocation` | Best-effort parser source location. |
 | `ConfigCodec<T>` | Converts between Java values and `ConfigNode`. |
-| `ConfigCodecRegistry` | Registry for built-in scalar codecs and custom codecs. |
+| `ConfigCodecRegistry` | Registry for built-in scalar codecs and static-field custom codecs. |
 | `ConfigLoader` | Reads and writes `ConfigDocument` through a format backend. |
 | `ConfigFormat` | Backend descriptor with name, extensions, capabilities, and loader. |
 | `ConfigMerger`, `MergeOptions`, `MergeListStrategy` | Default merging primitives. |
@@ -43,7 +43,7 @@ Each format module depends on core and exposes a singleton `ConfigFormat` named 
 
 | Module | Main types |
 | --- | --- |
-| `pistonconfig-annotations` | `AnnotatedConfigMapper`, `ConfigComment`, `ConfigIgnore`, `ConfigName`, `ConfigPathPrefix` |
+| `pistonconfig-annotations` | `ConfigStore`, `ConfigStores`, `AnnotatedConfigMapper`, `ConfigMapperOptions`, `ConfigSerializer`, `ConfigSerializeWith`, `ConfigPolymorphic`, `ConfigComment`, `ConfigIgnore`, `ConfigName`, `ConfigPathPrefix` |
 | `pistonconfig-static-fields` | `ConfigProperty<T>`, `StaticConfigDefinition` |
 | `pistonconfig-env` | `EnvironmentOverrides` |
 | `pistonconfig-migrations` | `MigrationRegistry`, `ConfigMigration`, `Migrations` |

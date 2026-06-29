@@ -19,8 +19,8 @@ The core module defines a format-neutral mutable tree with separate layers for v
 | `ConfigCommentLine` | One comment line with text, marker, and logical type. |
 | `ConfigNodeDecorations` | Source details shared across formats. |
 | `ConfigValue` | Sealed immutable value model for codecs and adapters. |
-| `ConfigCodec<T>` | Encoder and decoder for Java value types. |
-| `ConfigCodecRegistry` | Registry of built-in and custom codecs. |
+| `ConfigCodec<T>` | Encoder and decoder for Java value types used by codec-based APIs. |
+| `ConfigCodecRegistry` | Registry of built-in scalar codecs and custom static-field codecs. |
 | `ConfigLoader` | Reader and writer for a concrete format. |
 | `ConfigFormat` | Named format descriptor with extensions, capabilities, and loader. |
 
@@ -92,8 +92,10 @@ The default registry supports:
 | --- | --- |
 | `String` | Uses string value or scalar `toString()`. |
 | `Boolean` and `boolean` | Accepts booleans and compatible strings. |
-| `Integer` and `int` | Accepts numbers and parseable strings. |
-| `Long` and `long` | Accepts numbers and parseable strings. |
-| `Double` and `double` | Accepts numbers and parseable strings. |
+| Primitive wrappers | Boolean, byte, short, int, long, float, double, char. |
+| Big numbers | `BigInteger`, `BigDecimal`. |
+| Time values | `LocalDate`, `LocalTime`, `LocalDateTime`, `Instant`, `Duration`, `Period`. |
+| Utility values | `UUID`, `File`, `Path`, `URL`, `URI`. |
+| Enums | Encoded by enum constant name. |
 
-Register custom codecs for application records and value objects.
+Register custom codecs for static-field application records and value objects.

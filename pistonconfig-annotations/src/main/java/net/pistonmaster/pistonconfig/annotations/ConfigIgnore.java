@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 /// Excludes a field from annotation mapping.
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.RECORD_COMPONENT})
 public @interface ConfigIgnore {
 }
