@@ -78,6 +78,10 @@ body {
   line-height: 1.65;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 a {
   color: var(--accent);
   text-decoration: none;
@@ -91,6 +95,16 @@ a:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
 }
 
 .site-header {
@@ -142,6 +156,7 @@ button:focus-visible {
   color: var(--text);
 }
 
+.search-open,
 .theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -158,9 +173,30 @@ button:focus-visible {
   cursor: pointer;
 }
 
+.search-open:hover,
 .theme-toggle:hover {
   border-color: var(--border-strong);
   color: var(--text);
+}
+
+.search-icon {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+}
+
+.search-icon::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  width: 6px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: currentColor;
+  transform: rotate(45deg);
 }
 
 .theme-toggle-icon {
@@ -261,6 +297,29 @@ button:focus-visible {
 .page {
   min-width: 0;
   padding: 48px 0 84px;
+}
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 22px;
+  color: var(--faint);
+  font-size: 13px;
+}
+
+.breadcrumbs a {
+  color: var(--faint);
+}
+
+.breadcrumbs a:hover {
+  color: var(--text);
+}
+
+.breadcrumbs span::before {
+  content: "/";
+  margin-right: 6px;
+  color: var(--border-strong);
 }
 
 h1,
@@ -482,6 +541,105 @@ pre code {
   line-height: 1.55;
 }
 
+.search-dialog {
+  width: min(720px, calc(100% - 32px));
+  max-height: min(720px, calc(100% - 32px));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.search-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.38);
+}
+
+.search-form {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-form h2 {
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  font-size: 18px;
+}
+
+.search-form div {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-form input {
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-code);
+  color: var(--text);
+  font: inherit;
+}
+
+.search-form button,
+.module-builder button {
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.search-form button:hover,
+.module-builder button:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.search-results {
+  display: grid;
+  gap: 0;
+  max-height: 520px;
+  overflow: auto;
+}
+
+.search-result {
+  display: block;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+}
+
+.search-result:hover {
+  background: var(--surface-muted);
+  text-decoration: none;
+}
+
+.search-result strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.search-result p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.search-empty {
+  padding: 18px;
+  color: var(--muted);
+}
+
 .intro {
   margin: 0 0 28px;
   padding-bottom: 24px;
@@ -495,15 +653,38 @@ pre code {
   margin: 24px 0;
 }
 
+.quickstart > *,
+.home-grid > *,
+.link-grid > *,
+.module-grid > *,
+.path-grid > *,
+.feature-grid > *,
+.doc-grid > *,
+.tool-grid > *,
+.module-matrix > *,
+.dependency-output > *,
+.module-builder,
+.dependency-output,
+.code-frame {
+  min-width: 0;
+}
+
 .home-grid,
 .link-grid,
 .module-grid,
 .path-grid,
-.feature-grid {
+.feature-grid,
+.doc-grid,
+.tool-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin: 24px 0;
+}
+
+.doc-grid.three,
+.module-matrix {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .home-panel,
@@ -512,7 +693,10 @@ pre code {
 .path-card,
 .callout,
 .metadata-list div,
-.decision {
+.decision,
+.tool-card,
+.module-choice,
+.page-nav a {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
@@ -522,7 +706,10 @@ pre code {
 .link-card,
 .module-card,
 .path-card,
-.decision {
+.decision,
+.tool-card,
+.module-choice,
+.page-nav a {
   padding: 18px;
 }
 
@@ -530,7 +717,9 @@ pre code {
   color: inherit;
 }
 
-.link-card:hover {
+.link-card:hover,
+.tool-card:hover,
+.page-nav a:hover {
   border-color: var(--border-strong);
   text-decoration: none;
 }
@@ -539,7 +728,9 @@ pre code {
 .link-card h3,
 .module-card h3,
 .path-card h3,
-.decision h3 {
+.decision h3,
+.tool-card h3,
+.module-choice h3 {
   margin: 0 0 8px;
   padding: 0;
   border: 0;
@@ -550,8 +741,76 @@ pre code {
 .link-card p,
 .module-card p,
 .path-card p,
-.decision p {
+.decision p,
+.tool-card p,
+.module-choice p {
   margin: 0;
+}
+
+.module-choice {
+  display: grid;
+  gap: 8px;
+}
+
+.module-choice label {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.module-choice input {
+  margin-top: 5px;
+}
+
+.module-builder {
+  display: grid;
+  gap: 18px;
+  margin: 24px 0;
+}
+
+.module-builder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dependency-output {
+  display: grid;
+  gap: 14px;
+}
+
+.page-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.page-nav a {
+  color: inherit;
+}
+
+.page-nav span {
+  display: block;
+  color: var(--faint);
+  font-size: 13px;
+}
+
+.page-nav strong {
+  display: block;
+}
+
+.page-nav a:last-child {
+  text-align: right;
+}
+
+.toc a[aria-current="true"] {
+  color: var(--text);
+  border-left-color: var(--accent);
 }
 
 .callout {
@@ -648,7 +907,12 @@ pre code {
   .link-grid,
   .module-grid,
   .path-grid,
-  .feature-grid {
+  .feature-grid,
+  .doc-grid,
+  .doc-grid.three,
+  .tool-grid,
+  .module-matrix,
+  .page-nav {
     grid-template-columns: 1fr;
   }
 
@@ -662,5 +926,14 @@ pre code {
     align-items: flex-start;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .search-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .page-nav a:last-child {
+    text-align: left;
   }
 }

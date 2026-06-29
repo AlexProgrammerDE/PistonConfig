@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://config.pistonmaster.net/sitemap.xml

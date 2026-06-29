@@ -1,0 +1,17 @@
+# PistonConfig
+
+PistonConfig is a Java 25 configuration library with a format-neutral document model, comment-aware format backends, typed codecs, annotation configs, static field declarations, environment overrides, and migrations.
+
+## Primary documentation
+
+- Overview: https://config.pistonmaster.net/
+- Getting started: https://config.pistonmaster.net/guides/getting-started.html
+- Installation: https://config.pistonmaster.net/guides/installation.html
+- Modules: https://config.pistonmaster.net/reference/modules.html
+- Document model: https://config.pistonmaster.net/reference/document-model.html
+- Format metadata: https://config.pistonmaster.net/reference/format-metadata.html
+- Module builder: https://config.pistonmaster.net/tools/module-builder.html
+
+## Source
+
+- Repository: https://github.com/AlexProgrammerDE/PistonConfig

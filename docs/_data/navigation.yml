@@ -1,0 +1,87 @@
+sections:
+  - title: Start
+    links:
+      - title: Overview
+        url: /
+      - title: Guides
+        url: /guides/
+      - title: Examples
+        url: /examples/
+      - title: Reference
+        url: /reference/
+      - title: Concepts
+        url: /concepts/
+      - title: Tools
+        url: /tools/
+  - title: Guides
+    links:
+      - title: Getting Started
+        url: /guides/getting-started.html
+      - title: Installation
+        url: /guides/installation.html
+      - title: Manual API
+        url: /guides/manual-api.html
+      - title: Multi-Format Apps
+        url: /guides/multi-format-apps.html
+      - title: Format Backends
+        url: /guides/format-backends.html
+      - title: Merge Defaults
+        url: /guides/merge-defaults.html
+      - title: Custom Codecs
+        url: /guides/custom-codecs.html
+      - title: Annotation Configs
+        url: /guides/annotation-configs.html
+      - title: Static Fields
+        url: /guides/static-field-configs.html
+      - title: Environment Overrides
+        url: /guides/environment-overrides.html
+      - title: Migrations
+        url: /guides/migrations.html
+      - title: Testing Configs
+        url: /guides/testing-configs.html
+      - title: Diagnostics
+        url: /guides/validation-and-diagnostics.html
+  - title: Examples
+    links:
+      - title: Application Startup
+        url: /examples/application-startup.html
+      - title: Format Conversion
+        url: /examples/format-conversion.html
+      - title: Typed Record Config
+        url: /examples/typed-record-config.html
+      - title: Static Key Registry
+        url: /examples/static-key-registry.html
+  - title: Reference
+    links:
+      - title: Modules
+        url: /reference/modules.html
+      - title: API Surface
+        url: /reference/api-surface.html
+      - title: Document Model
+        url: /reference/document-model.html
+      - title: Format Comparison
+        url: /reference/format-comparison.html
+      - title: Format Metadata
+        url: /reference/format-metadata.html
+      - title: Startup Order
+        url: /reference/startup-order.html
+      - title: Publishing
+        url: /reference/publishing.html
+  - title: Concepts
+    links:
+      - title: Design Goals
+        url: /concepts/design-goals.html
+      - title: Lossless Configuration
+        url: /concepts/lossless-configuration.html
+      - title: Access Styles
+        url: /concepts/access-styles.html
+      - title: Round Tripping
+        url: /concepts/round-tripping.html
+      - title: Migration Strategy
+        url: /concepts/migration-strategy.html
+      - title: Type Safety
+        url: /concepts/type-safety.html
+  - title: Tools
+    links:
+      - title: Module Builder
+        url: /tools/module-builder.html

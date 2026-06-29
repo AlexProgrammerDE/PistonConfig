@@ -28,6 +28,7 @@
     {% seo %}
   </head>
   <body>
+    <div class="reading-progress" data-reading-progress aria-hidden="true"></div>
     <header class="site-header">
       <a class="brand" href="{{ '/' | relative_url }}">
         <img src="{{ '/assets/img/mark.svg' | relative_url }}" alt="" width="28" height="28">
@@ -37,9 +38,14 @@
         <nav class="top-nav" aria-label="Main navigation">
           <a href="{{ '/guides/getting-started.html' | relative_url }}">Start</a>
           <a href="{{ '/guides/installation.html' | relative_url }}">Install</a>
+          <a href="{{ '/examples/' | relative_url }}">Examples</a>
           <a href="{{ '/reference/modules.html' | relative_url }}">Reference</a>
           <a href="https://github.com/AlexProgrammerDE/PistonConfig">GitHub</a>
         </nav>
+        <button class="search-open" type="button" data-search-open aria-label="Search documentation">
+          <span class="search-icon" aria-hidden="true"></span>
+          <span>Search</span>
+        </button>
         <button class="theme-toggle" type="button" data-theme-toggle aria-label="Switch to dark mode" aria-pressed="false">
           <span class="theme-toggle-icon" aria-hidden="true"></span>
           <span data-theme-toggle-label>Dark</span>
@@ -48,33 +54,17 @@
     </header>
     <div class="shell">
       <aside class="sidebar" aria-label="Documentation navigation">
-        <div class="nav-section">
-          <p>Guides</p>
-          <a href="{{ '/guides/getting-started.html' | relative_url }}">Getting Started</a>
-          <a href="{{ '/guides/installation.html' | relative_url }}">Installation</a>
-          <a href="{{ '/guides/manual-api.html' | relative_url }}">Manual API</a>
-          <a href="{{ '/guides/format-backends.html' | relative_url }}">Format Backends</a>
-          <a href="{{ '/guides/merge-defaults.html' | relative_url }}">Merge Defaults</a>
-          <a href="{{ '/guides/custom-codecs.html' | relative_url }}">Custom Codecs</a>
-          <a href="{{ '/guides/annotation-configs.html' | relative_url }}">Annotation Configs</a>
-          <a href="{{ '/guides/static-field-configs.html' | relative_url }}">Static Fields</a>
-          <a href="{{ '/guides/environment-overrides.html' | relative_url }}">Environment Overrides</a>
-          <a href="{{ '/guides/migrations.html' | relative_url }}">Migrations</a>
-        </div>
-        <div class="nav-section">
-          <p>Reference</p>
-          <a href="{{ '/reference/modules.html' | relative_url }}">Modules</a>
-          <a href="{{ '/reference/document-model.html' | relative_url }}">Document Model</a>
-          <a href="{{ '/reference/format-metadata.html' | relative_url }}">Format Metadata</a>
-          <a href="{{ '/reference/publishing.html' | relative_url }}">Publishing</a>
-        </div>
-        <div class="nav-section">
-          <p>Concepts</p>
-          <a href="{{ '/concepts/design-goals.html' | relative_url }}">Design Goals</a>
-          <a href="{{ '/concepts/lossless-configuration.html' | relative_url }}">Lossless Configuration</a>
-        </div>
+        {% for section in site.data.navigation.sections %}
+          <div class="nav-section">
+            <p>{{ section.title }}</p>
+            {% for link in section.links %}
+              <a href="{{ link.url | relative_url }}">{{ link.title }}</a>
+            {% endfor %}
+          </div>
+        {% endfor %}
       </aside>
-      <main class="page">
+      <main class="page" data-page-url="{{ page.url | relative_url }}" data-page-title="{{ page.title | default: site.title }}">
+        <nav class="breadcrumbs" aria-label="Breadcrumbs" data-breadcrumbs></nav>
         {{ content }}
       </main>
       <aside class="toc" aria-label="Page outline">
@@ -82,6 +72,16 @@
         <nav id="page-toc"></nav>
       </aside>
     </div>
+    <dialog class="search-dialog" data-search-dialog data-search-index="{{ '/search.json' | relative_url }}" aria-labelledby="search-title">
+      <form class="search-form" method="dialog">
+        <div>
+          <h2 id="search-title">Search Documentation</h2>
+          <input data-search-input type="search" autocomplete="off" placeholder="Search docs">
+        </div>
+        <button type="button" data-search-close aria-label="Close search">Close</button>
+      </form>
+      <div class="search-results" data-search-results role="list"></div>
+    </dialog>
     <script src="{{ '/assets/js/site.js' | relative_url }}"></script>
   </body>
 </html>
