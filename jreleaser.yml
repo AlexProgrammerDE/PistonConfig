@@ -5,7 +5,7 @@ project:
   longDescription: PistonConfig provides a lossless core configuration model, comment-aware backends, typed codecs, annotation configs, static field declarations, environment overrides, and migrations.
   authors:
     - AlexProgrammerDE
-  license: Apache-2.0
+  license: MIT
   links:
     homepage: https://config.pistonmaster.net
   java:
