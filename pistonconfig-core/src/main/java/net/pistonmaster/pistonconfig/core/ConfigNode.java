@@ -241,7 +241,7 @@ public final class ConfigNode {
     if (value instanceof String stringValue) {
       try {
         return Optional.of(Integer.parseInt(stringValue));
-      } catch (NumberFormatException ignored) {
+      } catch (NumberFormatException _) {
         return Optional.empty();
       }
     }
@@ -263,7 +263,7 @@ public final class ConfigNode {
     if (value instanceof String stringValue) {
       try {
         return Optional.of(Long.parseLong(stringValue));
-      } catch (NumberFormatException ignored) {
+      } catch (NumberFormatException _) {
         return Optional.empty();
       }
     }
@@ -285,7 +285,7 @@ public final class ConfigNode {
     if (value instanceof String stringValue) {
       try {
         return Optional.of(Double.parseDouble(stringValue));
-      } catch (NumberFormatException ignored) {
+      } catch (NumberFormatException _) {
         return Optional.empty();
       }
     }
@@ -328,7 +328,7 @@ public final class ConfigNode {
 
     for (String segment : path.segments()) {
       current.ensureObject();
-      current = current.objectChildren.computeIfAbsent(segment, ignored -> ConfigNode.object());
+      current = current.objectChildren.computeIfAbsent(segment, _ -> ConfigNode.object());
     }
 
     return current;

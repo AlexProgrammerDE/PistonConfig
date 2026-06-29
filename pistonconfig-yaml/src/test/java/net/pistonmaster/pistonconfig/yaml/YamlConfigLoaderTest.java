@@ -17,6 +17,7 @@ import net.pistonmaster.pistonconfig.core.ConfigComment;
 import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
 import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
 import net.pistonmaster.pistonconfig.core.ConfigCommentType;
+import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
 import net.pistonmaster.pistonconfig.core.ConfigPath;
@@ -105,7 +106,7 @@ final class YamlConfigLoaderTest {
 
   @Test
   void savesScalarStylesRawNumericValuesAndAnchors() {
-    var document = net.pistonmaster.pistonconfig.core.ConfigDocument.empty()
+    var document = ConfigDocument.empty()
       .setNode(ConfigPath.of("name"), ConfigNode.scalar("quoted")
         .decorate(decorations -> ImmutableConfigNodeDecorations.copyOf(decorations)
           .withScalarStyle(ConfigScalarStyle.SINGLE_QUOTED))

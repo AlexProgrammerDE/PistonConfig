@@ -1,5 +1,6 @@
 package net.pistonmaster.pistonconfig.yaml;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.Writer;
@@ -78,7 +79,7 @@ public final class YamlConfigLoader implements ConfigLoader {
     try {
       new Yaml(dumperOptions).serialize(toYaml(document.root()), writer);
     } catch (RuntimeException exception) {
-      throw new UncheckedIOException(new java.io.IOException("Could not write YAML configuration.", exception));
+      throw new UncheckedIOException(new IOException("Could not write YAML configuration.", exception));
     }
   }
 
@@ -143,7 +144,7 @@ public final class YamlConfigLoader implements ConfigLoader {
   private static ConfigNode parseInteger(String normalized) {
     try {
       return ConfigNode.scalar(Long.decode(normalized));
-    } catch (NumberFormatException exception) {
+    } catch (NumberFormatException _) {
       return ConfigNode.scalar(new BigInteger(normalized));
     }
   }

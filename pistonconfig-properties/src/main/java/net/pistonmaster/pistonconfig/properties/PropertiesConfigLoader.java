@@ -47,7 +47,7 @@ public final class PropertiesConfigLoader implements ConfigLoader {
 
     var document = ConfigDocument.empty();
     var layout = configuration.getLayout();
-    for (Iterator<String> keys = configuration.getKeys(); keys.hasNext();) {
+    for (Iterator<String> keys = configuration.getKeys(); keys.hasNext(); ) {
       var key = keys.next();
       var value = configuration.getProperty(key);
       var node = toNode(value);

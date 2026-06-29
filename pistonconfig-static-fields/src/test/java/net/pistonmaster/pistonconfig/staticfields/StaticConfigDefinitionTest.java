@@ -111,6 +111,7 @@ final class StaticConfigDefinitionTest {
       .isEmpty());
   }
 
+  @SuppressWarnings("UnusedVariable")
   private static final class Options {
     static final String IGNORED = "ignored";
     static final ConfigProperty<Integer> PORT = ConfigProperty.<Integer>builder()
@@ -139,6 +140,9 @@ final class StaticConfigDefinitionTest {
       .type(Endpoint.class)
       .defaultValue(new Endpoint("localhost", 25565))
       .build();
+
+    private EndpointOptions() {
+    }
   }
 
   private record Endpoint(String host, int port) {

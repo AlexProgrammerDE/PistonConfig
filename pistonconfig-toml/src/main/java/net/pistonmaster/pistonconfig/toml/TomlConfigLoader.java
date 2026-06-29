@@ -5,6 +5,7 @@ import com.electronwill.nightconfig.toml.TomlFormat;
 import com.electronwill.nightconfig.toml.TomlParser;
 import com.electronwill.nightconfig.toml.TomlVersion;
 import com.electronwill.nightconfig.toml.TomlWriter;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.Writer;
@@ -56,7 +57,7 @@ public final class TomlConfigLoader implements ConfigLoader {
       tomlWriter.setLenientWithBareKeys(false);
       tomlWriter.write(toConfig(document.root()), writer);
     } catch (RuntimeException exception) {
-      throw new UncheckedIOException(new java.io.IOException("Could not write TOML configuration.", exception));
+      throw new UncheckedIOException(new IOException("Could not write TOML configuration.", exception));
     }
   }
 
@@ -113,7 +114,7 @@ public final class TomlConfigLoader implements ConfigLoader {
     config.set(path, toValue(node));
     if (!node.comment().isEmpty()) {
       config.setComment(path, String.join(System.lineSeparator(), node.comment().all().stream()
-        .map(net.pistonmaster.pistonconfig.core.ConfigCommentLine::text)
+        .map(ConfigCommentLine::text)
         .toList()));
     }
   }

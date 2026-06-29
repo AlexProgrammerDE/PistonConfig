@@ -1,10 +1,15 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
 import org.gradle.api.GradleException
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.plugins.signing.SigningExtension
+import org.openrewrite.gradle.RewriteExtension
 
 plugins {
+  id("com.diffplug.spotless") version "8.4.0" apply false
   id("io.freefair.lombok") version "9.5.0" apply false
+  id("net.ltgt.errorprone") version "5.1.0" apply false
+  id("org.openrewrite.rewrite") version "7.32.1" apply false
 }
 
 val pistonConfigVersion = providers.gradleProperty("VERSION_NAME").get()
@@ -36,6 +41,9 @@ subprojects {
     apply(plugin = "java-platform")
   } else {
     apply(plugin = "java-library")
+    apply(plugin = "com.diffplug.spotless")
+    apply(plugin = "net.ltgt.errorprone")
+    apply(plugin = "org.openrewrite.rewrite")
   }
 
   apply(plugin = "maven-publish")
@@ -103,6 +111,7 @@ subprojects {
     tasks.withType<JavaCompile>().configureEach {
       options.encoding = "UTF-8"
       options.release.set(25)
+      options.compilerArgs.add("-Xlint:all,-serial,-processing")
     }
 
     tasks.withType<Javadoc>().configureEach {
@@ -115,11 +124,36 @@ subprojects {
     }
 
     dependencies {
-      add("compileOnly", "org.immutables:value-annotations:$immutablesVersion")
+      add("compileOnlyApi", "org.immutables:value-annotations:$immutablesVersion")
       add("annotationProcessor", "org.immutables:value:$immutablesVersion")
+      add("errorprone", "com.google.errorprone:error_prone_core:2.49.0")
+      add("rewrite", "org.openrewrite.recipe:rewrite-static-analysis:2.34.0")
+      add("rewrite", "org.openrewrite.recipe:rewrite-migrate-java:3.34.0")
+      add("rewrite", "org.openrewrite.recipe:rewrite-rewrite:0.24.2")
       add("testImplementation", platform("org.junit:junit-bom:6.1.1"))
       add("testImplementation", "org.junit.jupiter:junit-jupiter")
       add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+    }
+
+    extensions.configure<RewriteExtension>("rewrite") {
+      setConfigFile(rootProject.file("rewrite.yml"))
+      activeRecipe("org.openrewrite.staticanalysis.CodeCleanup")
+      activeRecipe("org.openrewrite.java.migrate.UpgradeToJava25")
+      activeRecipe("org.openrewrite.java.recipes.RecipeTestingBestPractices")
+      activeStyle("net.pistonmaster.pistonconfig.OpenRewriteStyle")
+      isExportDatatables = true
+    }
+
+    extensions.configure<SpotlessExtension>("spotless") {
+      java {
+        trimTrailingWhitespace()
+        leadingTabsToSpaces(4)
+        endWithNewline()
+      }
+    }
+
+    tasks.matching { task -> task.name.startsWith("rewrite") }.configureEach {
+      notCompatibleWithConfigurationCache("OpenRewrite tasks access Gradle project state at execution time.")
     }
   }
 

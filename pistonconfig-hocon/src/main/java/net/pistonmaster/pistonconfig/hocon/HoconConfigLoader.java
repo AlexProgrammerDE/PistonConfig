@@ -9,6 +9,7 @@ import com.typesafe.config.ConfigSyntax;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueFactory;
 import com.typesafe.config.ConfigValueType;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.io.Writer;
@@ -68,7 +69,7 @@ public final class HoconConfigLoader implements ConfigLoader {
     try {
       writer.write(toValue(document.root()).render(renderOptions));
       writer.write(System.lineSeparator());
-    } catch (java.io.IOException exception) {
+    } catch (IOException exception) {
       throw new UncheckedIOException("Could not write HOCON configuration.", exception);
     }
   }
@@ -144,7 +145,7 @@ public final class HoconConfigLoader implements ConfigLoader {
 
     if (!node.comment().isEmpty()) {
       value = value.withOrigin(value.origin().withComments(node.comment().all().stream()
-        .map(net.pistonmaster.pistonconfig.core.ConfigCommentLine::text)
+        .map(ConfigCommentLine::text)
         .toList()));
     }
     return value;

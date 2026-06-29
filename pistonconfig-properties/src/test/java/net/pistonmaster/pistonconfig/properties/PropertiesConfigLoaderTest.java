@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Map;
@@ -118,10 +120,10 @@ final class PropertiesConfigLoaderTest {
       .build();
   }
 
-  private static final class ThrowingReader extends java.io.Reader {
+  private static final class ThrowingReader extends Reader {
     @Override
-    public int read(char[] buffer, int offset, int length) throws java.io.IOException {
-      throw new java.io.IOException("boom");
+    public int read(char[] buffer, int offset, int length) throws IOException {
+      throw new IOException("boom");
     }
 
     @Override

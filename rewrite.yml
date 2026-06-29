@@ -1,0 +1,11 @@
+---
+type: specs.openrewrite.org/v1beta/style
+name: net.pistonmaster.pistonconfig.OpenRewriteStyle
+styleConfigs:
+  - org.openrewrite.java.style.ImportLayoutStyle:
+      classCountToUseStarImport: 999
+      nameCountToUseStarImport: 999
+      layout:
+        - 'import static all other imports'
+        - '<blank line>'
+        - 'import all other imports'

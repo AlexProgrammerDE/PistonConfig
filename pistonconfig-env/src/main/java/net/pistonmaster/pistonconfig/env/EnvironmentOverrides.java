@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.PistonStyle;
 import org.immutables.value.Value;
@@ -88,53 +89,53 @@ public interface EnvironmentOverrides {
     return document;
   }
 
-  private static java.util.Optional<String> toEnvironmentPath(String key, String environmentPrefix) {
+  private static Optional<String> toEnvironmentPath(String key, String environmentPrefix) {
     var normalized = key.toUpperCase(Locale.ROOT);
     if (!environmentPrefix.isEmpty()) {
       var prefix = environmentPrefix + "_";
       if (!normalized.startsWith(prefix)) {
-        return java.util.Optional.empty();
+        return Optional.empty();
       }
       normalized = normalized.substring(prefix.length());
     }
 
     if (normalized.isBlank()) {
-      return java.util.Optional.empty();
+      return Optional.empty();
     }
 
-    return java.util.Optional.of(normalized.toLowerCase(Locale.ROOT).replace('_', '.'));
+    return Optional.of(normalized.toLowerCase(Locale.ROOT).replace('_', '.'));
   }
 
-  private static java.util.Optional<String> toPropertyPath(String key, String propertyPrefix) {
+  private static Optional<String> toPropertyPath(String key, String propertyPrefix) {
     if (!propertyPrefix.isEmpty()) {
       var prefix = propertyPrefix + ".";
       if (!key.startsWith(prefix)) {
-        return java.util.Optional.empty();
+        return Optional.empty();
       }
       key = key.substring(prefix.length());
     }
 
     if (key.isBlank()) {
-      return java.util.Optional.empty();
+      return Optional.empty();
     }
 
-    return java.util.Optional.of(key);
+    return Optional.of(key);
   }
 
   private static Object parseScalar(String raw) {
-    if (raw.equalsIgnoreCase("true") || raw.equalsIgnoreCase("false")) {
+    if ("true".equalsIgnoreCase(raw) || "false".equalsIgnoreCase(raw)) {
       return Boolean.parseBoolean(raw);
     }
 
     try {
       return Long.parseLong(raw);
-    } catch (NumberFormatException ignored) {
+    } catch (NumberFormatException _) {
       // Keep checking scalar types.
     }
 
     try {
       return Double.parseDouble(raw);
-    } catch (NumberFormatException ignored) {
+    } catch (NumberFormatException _) {
       return raw;
     }
   }

@@ -15,11 +15,12 @@ import net.pistonmaster.pistonconfig.core.ConfigComment;
 import net.pistonmaster.pistonconfig.core.ConfigCommentLine;
 import net.pistonmaster.pistonconfig.core.ConfigCommentMarker;
 import net.pistonmaster.pistonconfig.core.ConfigCommentType;
-import net.pistonmaster.pistonconfig.core.ConfigScalarStyle;
 import net.pistonmaster.pistonconfig.core.ConfigDocument;
 import net.pistonmaster.pistonconfig.core.ConfigException;
 import net.pistonmaster.pistonconfig.core.ConfigLoader;
 import net.pistonmaster.pistonconfig.core.ConfigNode;
+import net.pistonmaster.pistonconfig.core.ConfigPath;
+import net.pistonmaster.pistonconfig.core.ConfigScalarStyle;
 import net.pistonmaster.pistonconfig.core.ImmutableConfigNodeDecorations;
 
 /// JSON, JSONC, and JSON5 reader and writer backed by json5-java.
@@ -75,7 +76,7 @@ public final class JsonConfigLoader implements ConfigLoader {
     } else if (element.isJson5Object()) {
       node = ConfigNode.object();
       for (Map.Entry<String, Json5Element> entry : element.getAsJson5Object().entrySet()) {
-        node.setNode(net.pistonmaster.pistonconfig.core.ConfigPath.of(entry.getKey()), fromJson5(entry.getValue()));
+        node.setNode(ConfigPath.of(entry.getKey()), fromJson5(entry.getValue()));
       }
     } else if (element.isJson5Array()) {
       node = ConfigNode.list();
@@ -133,7 +134,7 @@ public final class JsonConfigLoader implements ConfigLoader {
     }
 
     if (!node.comment().isEmpty()) {
-      element.setComment(String.join(System.lineSeparator(), node.comment().all().stream().map(net.pistonmaster.pistonconfig.core.ConfigCommentLine::text).toList()));
+      element.setComment(String.join(System.lineSeparator(), node.comment().all().stream().map(ConfigCommentLine::text).toList()));
     }
     return element;
   }
