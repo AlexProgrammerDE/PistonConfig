@@ -83,7 +83,7 @@
   });
 
   const headings = Array.from(document.querySelectorAll(".page h2, .page h3"))
-    .filter((heading) => !heading.closest(".home-panel, .link-card, .module-card, .path-card, .decision, .tool-card, .module-choice, .page-nav"));
+    .filter((heading) => !heading.closest(".quickstart, .home-panel, .link-card, .module-card, .path-card, .decision, .tool-card, .module-choice, .page-nav"));
   const toc = document.getElementById("page-toc");
   const tocLinks = [];
 

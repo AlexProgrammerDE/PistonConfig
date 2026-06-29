@@ -653,6 +653,13 @@ pre code {
   margin: 24px 0;
 }
 
+.quickstart h2 {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  font-size: 18px;
+}
+
 .quickstart > *,
 .home-grid > *,
 .link-grid > *,

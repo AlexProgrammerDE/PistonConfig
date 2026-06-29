@@ -30,6 +30,18 @@ After this merge:
 
 The user value stays in place. The missing default is added.
 
+## Merge Options
+
+`MergeOptions` is a record with three fields, so you can build a custom mix when the two presets do not fit.
+
+| Field | Purpose |
+| --- | --- |
+| `updateComments` | Refresh comments from the defaults without touching user values. |
+| `removeUnknown` | Remove object keys that the defaults do not declare. |
+| `listStrategy` | How to merge when both the user value and the default are lists. |
+
+The presets cover the common cases. `MergeOptions.conservative()` is `(updateComments = true, removeUnknown = false, PRESERVE_EXISTING)`. `MergeOptions.exactDefaults()` is `(true, true, REPLACE)`.
+
 ## Exact Defaults
 
 ```java
@@ -42,8 +54,8 @@ Exact defaults are useful for generated files where unknown keys should be remov
 
 ```java
 var options = new MergeOptions(
-  true,
-  false,
+  true,                             // updateComments
+  false,                            // removeUnknown
   MergeListStrategy.APPEND_MISSING
 );
 ```
@@ -60,8 +72,8 @@ When `updateComments` is true, defaults can refresh comments without replacing u
 
 ```java
 var options = new MergeOptions(
-  true,
-  false,
+  true,                                // refresh comments from defaults
+  false,                               // keep unknown user keys
   MergeListStrategy.PRESERVE_EXISTING
 );
 ```
