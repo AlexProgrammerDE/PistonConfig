@@ -9,7 +9,7 @@ plugins {
   id("com.diffplug.spotless") version "8.10.4" apply false
   id("io.freefair.lombok") version "9.8.2" apply false
   id("net.ltgt.errorprone") version "5.1.1" apply false
-  id("org.openrewrite.rewrite") version "7.41.0" apply false
+  id("org.openrewrite.rewrite") version "7.32.1" apply false
 }
 
 val pistonConfigVersion = providers.gradleProperty("VERSION_NAME").get()
