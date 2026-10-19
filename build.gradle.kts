@@ -6,14 +6,14 @@ import org.gradle.plugins.signing.SigningExtension
 import org.openrewrite.gradle.RewriteExtension
 
 plugins {
-  id("com.diffplug.spotless") version "8.4.0" apply false
-  id("io.freefair.lombok") version "9.5.0" apply false
-  id("net.ltgt.errorprone") version "5.1.0" apply false
+  id("com.diffplug.spotless") version "8.10.4" apply false
+  id("io.freefair.lombok") version "9.8.2" apply false
+  id("net.ltgt.errorprone") version "5.1.1" apply false
   id("org.openrewrite.rewrite") version "7.32.1" apply false
 }
 
 val pistonConfigVersion = providers.gradleProperty("VERSION_NAME").get()
-val immutablesVersion = "2.12.2"
+val immutablesVersion = "2.12.3"
 val githubPackagesUrl = "https://maven.pkg.github.com/AlexProgrammerDE/PistonConfig"
 val bomModuleName = "pistonconfig-bom"
 val libraryModuleNames = listOf(
@@ -126,11 +126,11 @@ subprojects {
     dependencies {
       add("compileOnlyApi", "org.immutables:value-annotations:$immutablesVersion")
       add("annotationProcessor", "org.immutables:value:$immutablesVersion")
-      add("errorprone", "com.google.errorprone:error_prone_core:2.49.0")
-      add("rewrite", "org.openrewrite.recipe:rewrite-static-analysis:2.34.0")
-      add("rewrite", "org.openrewrite.recipe:rewrite-migrate-java:3.34.0")
-      add("rewrite", "org.openrewrite.recipe:rewrite-rewrite:0.24.2")
-      add("testImplementation", platform("org.junit:junit-bom:6.1.1"))
+      add("errorprone", "com.google.errorprone:error_prone_core:2.50.0")
+      add("rewrite", "org.openrewrite.recipe:rewrite-static-analysis:2.41.1")
+      add("rewrite", "org.openrewrite.recipe:rewrite-migrate-java:3.42.1")
+      add("rewrite", "org.openrewrite.recipe:rewrite-rewrite:0.30.0")
+      add("testImplementation", platform("org.junit:junit-bom:6.1.3"))
       add("testImplementation", "org.junit.jupiter:junit-jupiter")
       add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     }
