@@ -9,7 +9,7 @@ plugins {
   id("com.diffplug.spotless") version "8.10.4" apply false
   id("io.freefair.lombok") version "9.8.2" apply false
   id("net.ltgt.errorprone") version "5.1.1" apply false
-  id("org.openrewrite.rewrite") version "7.32.1" apply false
+  id("org.openrewrite.rewrite") version "7.41.0" apply false
 }
 
 val pistonConfigVersion = providers.gradleProperty("VERSION_NAME").get()
@@ -126,7 +126,7 @@ subprojects {
     dependencies {
       add("compileOnlyApi", "org.immutables:value-annotations:$immutablesVersion")
       add("annotationProcessor", "org.immutables:value:$immutablesVersion")
-      add("errorprone", "com.google.errorprone:error_prone_core:2.50.0")
+      add("errorprone", "com.google.errorprone:error_prone_core:2.51.0")
       add("rewrite", "org.openrewrite.recipe:rewrite-static-analysis:2.41.1")
       add("rewrite", "org.openrewrite.recipe:rewrite-migrate-java:3.42.1")
       add("rewrite", "org.openrewrite.recipe:rewrite-rewrite:0.30.0")
