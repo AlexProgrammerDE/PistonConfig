@@ -126,7 +126,7 @@ subprojects {
     dependencies {
       add("compileOnlyApi", "org.immutables:value-annotations:$immutablesVersion")
       add("annotationProcessor", "org.immutables:value:$immutablesVersion")
-      add("errorprone", "com.google.errorprone:error_prone_core:2.50.0")
+      add("errorprone", "com.google.errorprone:error_prone_core:2.51.0")
       add("rewrite", "org.openrewrite.recipe:rewrite-static-analysis:2.41.1")
       add("rewrite", "org.openrewrite.recipe:rewrite-migrate-java:3.42.1")
       add("rewrite", "org.openrewrite.recipe:rewrite-rewrite:0.30.0")
