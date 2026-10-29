@@ -9,3 +9,8 @@
 - Lombok is available through the FreeFair plugin, but use it only when it reduces internal boilerplate without weakening the public API.
 - Keep backend-specific parser details represented by core-owned metadata and decorations where practical.
 - Do not use magic metadata strings directly. Add constants classes for public keys.
+
+## Java conventions
+
+- Import Java types instead of using fully qualified class names in code.
+- Use PascalCase for Java class names. Preserve the existing package roots.
