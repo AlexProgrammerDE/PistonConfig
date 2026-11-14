@@ -18,3 +18,9 @@ plugins:
 exclude:
   - Gemfile
   - Gemfile.lock
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: /assets/images/social.png
